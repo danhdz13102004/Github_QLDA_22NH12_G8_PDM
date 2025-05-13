@@ -1,0 +1,21 @@
+# Ignore Steps folder
+/Steps/
+
+# Ignore all markdown files
+*.md
+
+# Node modules
+node_modules/
+
+# React Native common ignores
+.expo/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+.DS_Store
+.env
