@@ -35,37 +35,88 @@ const initializeDatabase = async () => {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role ENUM('user', 'admin') DEFAULT 'user',
+        role ENUM('admin', 'user') DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
 
-    // Create sign_language_logs table
+    // Create interaction_logs table
     await conn.query(`
-      CREATE TABLE IF NOT EXISTS sign_language_logs (
+      CREATE TABLE IF NOT EXISTS interaction_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
-        gesture_input TEXT,
-        recognized_text TEXT,
-        confidence FLOAT,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        userId INT NOT NULL,
+        action VARCHAR(255) NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 
-    // Create sign_language_dictionary table
+    // Create signs table
     await conn.query(`
-      CREATE TABLE IF NOT EXISTS sign_language_dictionary (
+      CREATE TABLE IF NOT EXISTS signs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        gesture_name VARCHAR(255) NOT NULL UNIQUE,
+        gestureName VARCHAR(255) NOT NULL UNIQUE,
         description TEXT,
-        example_image_url VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create videos table
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS videos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        filePath VARCHAR(255) NOT NULL,
+        signId INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (signId) REFERENCES signs(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create courses table
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS courses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create enrollments table (join table for users and courses)
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS enrollments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId INT NOT NULL,
+        courseId INT NOT NULL,
+        enrollmentDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE CASCADE,
+        UNIQUE KEY user_course (userId, courseId)
+      )
+    `);
+
+    // Create course_sign table (many-to-many relationship between courses and signs)
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS course_sign (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        courseId INT NOT NULL,
+        signId INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (courseId) REFERENCES courses(id) ON DELETE CASCADE,
+        FOREIGN KEY (signId) REFERENCES signs(id) ON DELETE CASCADE,
+        UNIQUE KEY course_sign (courseId, signId)
       )
     `);
 
