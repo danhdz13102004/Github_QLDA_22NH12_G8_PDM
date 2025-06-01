@@ -27,9 +27,7 @@ export default function Login() {
     if (validateForm()) {
       try {
         setIsLoading(true);
-          console.log('Logging in with:', { email, password });
-          console.log('API Endpoint:', API_ENDPOINTS.LOGIN);
-          const response = await fetch(API_ENDPOINTS.LOGIN, {
+          const response = await fetch(`${appConfig.API_URL}/user/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
