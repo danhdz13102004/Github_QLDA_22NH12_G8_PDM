@@ -5,7 +5,8 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function TabsLayout() {
-  return (    <Tabs
+  return (    
+  <Tabs
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;          switch (route.name) {
@@ -50,28 +51,32 @@ export default function TabsLayout() {
           );
         },
       })}
-    >      <Tabs.Screen
+    >      
+    <Tabs.Screen
         name="Home/index"
         options={{
           title: 'Home',
           headerTitle: 'Home',
           headerShown: false,
         }}
-      />      <Tabs.Screen
+      />      
+      <Tabs.Screen
         name="Recognize/index"
         options={{
           title: 'Recognize',
           headerTitle: 'Recognize',
           headerShown: false,
         }}
-      />      <Tabs.Screen
+      />      
+      <Tabs.Screen
         name="Learn/index"
         options={{
           title: 'Learn',
           headerTitle: 'Learn',
           headerShown: false,
         }}
-      />      <Tabs.Screen
+      />      
+      <Tabs.Screen
         name="Profile/index"
         options={{
           title: 'Profile',
