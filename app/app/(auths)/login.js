@@ -26,7 +26,7 @@ export default function Login() {
     if (validateForm()) {
       try {
         setIsLoading(true);
-          const response = await fetch('http://localhost:3000/api/users/login', {
+          const response = await fetch(`${appConfig.API_URL}/user/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
