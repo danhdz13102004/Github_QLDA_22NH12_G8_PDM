@@ -62,7 +62,7 @@ export default function SignUp() {
         Alert.alert(
           'Success',
           'Successfully signed up! Let\'s sign in to continue.',
-          [{ text: 'OK', onPress: () => router.push('/login') }]
+          [{ text: 'OK', onPress: () => router.push('/(auths)/login') }]
         );
       } catch (error) {
         Alert.alert(

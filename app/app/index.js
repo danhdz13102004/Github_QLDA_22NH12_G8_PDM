@@ -1,7 +1,7 @@
-// SignLanguage/app/app/(auths)/index.js
+// SignLanguage/app/app/index.js
 import { Redirect } from 'expo-router';
 
 export default function Index() {
-  // Redirect to the login screen by default
+  // Redirect to the login screen when the app starts
   return <Redirect href="/(auths)/login" />;
 }

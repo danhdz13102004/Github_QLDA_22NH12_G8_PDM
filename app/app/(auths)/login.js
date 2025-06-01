@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { API_ENDPOINTS } from '../../constants/ApiConfig';
 
 export default function Login() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function Login() {
         // Store the token and redirect to home screen
         // Note: In a real app, you would store this token securely
         // using something like Secure Store or AsyncStorage
-        router.push('/(tabs)');
+        router.replace('/(tabs)/Home');
       } catch (error) {
         Alert.alert('Error', error.message);
       } finally {

@@ -1,0 +1,52 @@
+I'm building a React Native app using JavaScript to recognize and teach American Sign Language (ASL). I already have an app/(auth) folder for authentication (e.g., login, register).
+Now, I want to create a new folder called app/(tabs) that contains subfolders for each main tab in the bottom navigation bar. The tabs are:
+
+Home
+
+Recognize
+
+Learn
+
+Profile
+
+Each of these tabs should have its own folder inside app/tabs, and each folder should contain an index.js file as the entry point for the screen.
+
+I also need a Layout.js file that defines the bottom tab navigation layout (like in the attached screenshot). This file should include a Tab.Navigator with 4 Tab.Screens for the tabs mentioned above.
+
+I want the following structure generated:
+
+Copy
+Edit
+app/
+├── auth/
+│ ├── Login.js
+│ ├── Register.js
+│ └── ...
+├── tabs/
+│ ├── Home/
+│ │ └── index.js
+│ ├── Recognize/
+│ │ └── index.js
+│ ├── Learn/
+│ │ └── index.js
+│ ├── Profile/
+│ │ └── index.js
+│ └── Layout.js
+└── App.js
+Please use @react-navigation/native and @react-navigation/bottom-tabs.
+The Layout.js should configure the navigation logic and include icons (you can use placeholders like Ionicons or similar).
+Each screen should export a simple component (e.g., "Home Screen", "Recognize Screen", etc.) for now, just for testing navigation.
+
+Output the code for each of the following files:
+
+App.js — wraps everything with NavigationContainer and renders the Layout
+
+tabs/Layout.js — contains BottomTab.Navigator with 4 tabs
+
+tabs/Home/index.js
+
+tabs/Recognize/index.js
+
+tabs/Learn/index.js
+
+tabs/Profile/index.js
