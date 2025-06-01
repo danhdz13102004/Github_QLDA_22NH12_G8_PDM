@@ -6,20 +6,9 @@ import tensorflow as tf
 import keras
 from queue import Queue
 from threading import Thread
-import cvzone
-from cvzone.SelfiSegmentationModule import SelfiSegmentation
-from google import genai
-from google.genai import types
 
-#GLOBAL VAR
-CORRECT_MODE = True
-try:
-    API_KEY = open(r'..\Model\Gemini\apiKey.txt').readline()
-    CLIENT = genai.Client(api_key=API_KEY)
-except Exception as e:
-    print(e)
-    CORRECT_MODE = False
-FILE_PATH_FOR_CLASS = os.path.join(os.pardir,'class_name.txt')
+
+FILE_PATH_FOR_CLASS = 'class_name.txt'
 CLASS_LIST = [name.strip() for name in open(FILE_PATH_FOR_CLASS,'r').readlines()]
 NUM_WORD = len(CLASS_LIST)
 SEQ_LEN = 20
@@ -127,11 +116,6 @@ class ViTSignLanguageModel(keras.Model):
         return keras.models.Model(inputs=[x], outputs=self.call(x))
 
 #-----------------------------------------------------------------------------------------------------------------
-def removeBackground(image):
-    segmentor = SelfiSegmentation()
-    green = (0, 255, 0)
-    imgNoBg = segmentor.removeBG(image, green, cutThreshold=0.50)
-    return imgNoBg
 
 def drawLandmarks(image, res):
     '''
@@ -223,8 +207,6 @@ def feed():
         scale = IMAGE_CAM_HEIGHT / frame.shape[0]
         frame = cv2.resize(frame,(int(frame.shape[1]*scale), int(frame.shape[0]*scale)))
         frame = cv2.flip(frame, 1)
-        #remove backgroung
-        # frame = removeBackground(frame)
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         res = mp_holistic.process(frame_rgb)
         #Extract
@@ -246,65 +228,9 @@ def feed():
     video_reader.release()
     cv2.destroyAllWindows()
 
-def predict_with_grammar_correct(my_model: keras.Model):
-    '''
-    Task of predict
-    '''
-    def grammar_correct(sentence:str):
-        response = CLIENT.models.generate_content_stream(
-            model="gemini-2.0-flash",
-            config=types.GenerateContentConfig(
-                system_instruction="You are an English teacher who is excellent at grammar correction.",
-                temperature=0.1,
-            ),
-            contents=[
-                '\n'.join([
-                    'Task: Correct the grammar of the sentence below. Return only one best corrected sentence without any explanation.',
-                    'Note: Keep the original meaning. If the sentence is incomplete or meaningless, just return it as is.',
-                    'Examples:',
-                    'Input 1: Where you house',
-                    'Output 1: Where is your house',
-                    'Input 2: I happy',
-                    'Output 2: I am happy',
-                    'Input 3: I',
-                    'Output 3: I',
-                    'Input 4: I need',
-                    'Output 4: I need',
-                    f'Input: {sentence}',
-                    'Output:'
-                ])
-            ]
-        )
-        print('Grammar correct:')
-        for chunk in response:
-            print(chunk.text, end="")
-
-    #Loop
-    global SENTEN
-    while True:
-        try:
-            x = sample_queue.get()
-        except Exception as e:
-            print('PREDICT THREAD:',e)
-            continue
-        if not x:
-            print('PREDICT THREAD: End')
-            break
-        y = my_model.predict(x[0],verbose=0)
-        class_id = np.argmax(y)
-        # print('PREDICT THREAD:','predict word','\033[30;31m'+CLASS_LIST[class_id]+'\033[0m'+f': {round(y[0][class_id]*100)}')
-        if y[0][class_id] < 0.8: 
-            class_id = len(CLASS_LIST) - 1
-        print('PREDICT THREAD:','predict word','\033[30;31m'+CLASS_LIST[class_id]+'\033[0m')
-        if CLASS_LIST[class_id] == '___':
-            if len(SENTEN.split()) > 2:
-                grammar_correct(SENTEN)
-                SENTEN = ''
-        else:
-            SENTEN+=f' {CLASS_LIST[class_id]}'
 
 
-def predict_with_no_grammar_correct(my_model: keras.Model):
+def predict(my_model: keras.Model):
     '''
     Task of predict
     '''
@@ -328,7 +254,6 @@ def predict_with_no_grammar_correct(my_model: keras.Model):
 if __name__=='__main__':
     my_model = keras.models.load_model(os.path.join(os.pardir,'Model','model_07_05_2025_15_07_1746630447_no_lstm_108_dim.keras'))
     feed_thread = Thread(target=feed)
-    print('In correct mode' if CORRECT_MODE else 'In NON correct mode')
-    predict_thread = Thread(target=predict_with_grammar_correct if CORRECT_MODE else predict_with_no_grammar_correct,args=(my_model,))
+    predict_thread = Thread(target=predict, args=(my_model,))
     feed_thread.start()
     predict_thread.start()
