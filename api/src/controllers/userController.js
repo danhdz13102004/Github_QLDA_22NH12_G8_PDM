@@ -20,8 +20,13 @@ const registerUser = async (req, res) => {
       });
     }
     
-    // In a real app, you would hash the password before storing
-    // const hashedPassword = await bcrypt.hash(password, 10);
+    // Check if password meets minimum requirements (at least 8 characters)
+    if (password.length < 8) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Password must be at least 8 characters long'
+      });
+    }
     
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
@@ -33,11 +38,14 @@ const registerUser = async (req, res) => {
       });
     }
     
-    // Create new user
+    // Encode password using base64
+    const encodedPassword = Buffer.from(password).toString('base64');
+    
+    // Create new user with encoded password
     const newUser = await User.create({
       name,
       email,
-      password, // Use hashedPassword in real app
+      password: encodedPassword,
       role: 'user'
     });
     
@@ -86,10 +94,9 @@ const loginUser = async (req, res) => {
         message: 'Invalid credentials'
       });
     }
-    
-    // In a real app, you would verify the password hash
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    const isPasswordValid = password === user.password; // Unsafe, for demo only
+      // Encode the provided password and compare with stored encoded password
+    const encodedPassword = Buffer.from(password).toString('base64');
+    const isPasswordValid = encodedPassword === user.password;
     
     if (!isPasswordValid) {
       return res.status(401).json({
