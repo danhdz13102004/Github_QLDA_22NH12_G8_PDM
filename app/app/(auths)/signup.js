@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { API_ENDPOINTS } from '../../constants/ApiConfig';
 
 export default function SignUp() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function SignUp() {
     if (validateForm()) {
       try {
         setIsLoading(true);
-          const response = await fetch('http://localhost:3000/api/users/register', {
+          const response = await fetch(API_ENDPOINTS.REGISTER, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -62,7 +63,7 @@ export default function SignUp() {
         Alert.alert(
           'Success',
           'Successfully signed up! Let\'s sign in to continue.',
-          [{ text: 'OK', onPress: () => router.push('/login') }]
+          [{ text: 'OK', onPress: () => router.push('/(auths)/login') }]
         );
       } catch (error) {
         Alert.alert(

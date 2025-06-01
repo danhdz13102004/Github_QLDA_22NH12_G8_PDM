@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { API_ENDPOINTS } from '../../constants/ApiConfig';
 
 export default function Login() {
   const router = useRouter();
@@ -26,7 +27,9 @@ export default function Login() {
     if (validateForm()) {
       try {
         setIsLoading(true);
-          const response = await fetch('http://localhost:3000/api/users/login', {
+          console.log('Logging in with:', { email, password });
+          console.log('API Endpoint:', API_ENDPOINTS.LOGIN);
+          const response = await fetch(API_ENDPOINTS.LOGIN, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -46,7 +49,7 @@ export default function Login() {
         // Store the token and redirect to home screen
         // Note: In a real app, you would store this token securely
         // using something like Secure Store or AsyncStorage
-        router.push('/(tabs)');
+        router.replace('/(tabs)/Home');
       } catch (error) {
         Alert.alert('Error', error.message);
       } finally {
