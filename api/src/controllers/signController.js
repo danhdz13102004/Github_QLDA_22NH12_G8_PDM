@@ -1,6 +1,7 @@
 const Sign = require('../models/Sign');
 const Video = require('../models/Video');
 const InteractionLog = require('../models/InteractionLog');
+const { pool } = require('../config/db'); // Use pool from db config
 
 /**
  * Get all signs
@@ -9,18 +10,11 @@ const InteractionLog = require('../models/InteractionLog');
  */
 const getAllSigns = async (req, res) => {
   try {
-    const signs = await Sign.findAll();
-    
-    res.status(200).json({
-      status: 'success',
-      data: signs
-    });
+    const [rows] = await pool.query('SELECT * FROM signs');
+    res.json(rows);
   } catch (error) {
     console.error('Error fetching signs:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message || 'Failed to fetch signs'
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -30,45 +24,38 @@ const getAllSigns = async (req, res) => {
  * @param {Object} res - Express response object
  */
 const getSignById = async (req, res) => {
+  const { id } = req.params;
   try {
-    const signId = req.params.id;
-    
-    const sign = await Sign.findById(signId);
-    if (!sign) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Sign not found'
-      });
+    const [signRows] = await pool.query('SELECT * FROM signs WHERE id = ?', [id]);
+    if (signRows.length === 0) {
+      return res.status(404).json({ error: 'Sign not found' });
     }
-    
-    // Get videos for this sign
-    const videos = await Sign.getVideos(signId);
-    
-    // Get courses that include this sign
-    const courses = await Sign.getCourses(signId);
-    
-    // Log this interaction if user is authenticated
-    if (req.user) {
-      await InteractionLog.create({
-        userId: req.user.id,
-        action: `Viewed sign: ${sign.gestureName}`
-      });
-    }
-    
-    res.status(200).json({
-      status: 'success',
-      data: {
-        ...sign,
-        videos,
-        courses
-      }
-    });
+
+    const [videoRows] = await pool.query('SELECT * FROM videos WHERE signId = ?', [id]);
+    const sign = { ...signRows[0], videos: videoRows };
+    res.json(sign);
   } catch (error) {
-    console.error('Error fetching sign:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message || 'Failed to fetch sign'
-    });
+    console.error('Error fetching sign details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Search signs by query
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const searchSigns = async (req, res) => {
+  const { query } = req.query;
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM signs WHERE gestureName LIKE ? OR description LIKE ?',
+      [`%${query}%`, `%${query}%`]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error searching signs:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -446,5 +433,6 @@ module.exports = {
   deleteSign,
   createVideo,
   getVideoById,
-  deleteVideo
+  deleteVideo,
+  searchSigns
 };

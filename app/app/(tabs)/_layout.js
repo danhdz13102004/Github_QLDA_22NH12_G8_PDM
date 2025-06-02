@@ -30,7 +30,7 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: '#6c5ce7',
         tabBarInactiveTintColor: 'gray',
-        headerShown: true,
+        headerShown: false,
         tabBarStyle: {
           paddingVertical: 5,
           borderTopLeftRadius: 15,

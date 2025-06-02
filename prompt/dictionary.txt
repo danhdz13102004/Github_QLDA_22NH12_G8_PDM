@@ -1,0 +1,83 @@
+I am building a mobile application using React Native for the frontend, Node.js with Express.js for the backend, and MySQL as the database. The app is a sign language dictionary for American Sign Language (ASL). It will allow users to browse signs, view sign details, and watch videos demonstrating the signs. The videos are stored locally on the server in the directory D:/Dataset, where each subdirectory is named after an ASL gesture (e.g., again, hello, thank you), and each subdirectory contains video files demonstrating the gesture. These video files need to be read, and their metadata (e.g., file paths) must be stored in a MySQL database.
+
+I have provided two UI design screenshots for reference:
+
+The first screenshot shows the dictionary screen with a search bar, category tabs (e.g., Common, Greetings, Questions), and a list of signs (e.g., Hello, Thank You, Please, Sorry).
+The second screenshot shows the sign detail screen with a video player placeholder, the sign name (e.g., "Thank You"), a description, and instructions on how to perform the sign.
+Requirements
+Backend (Node.js, Express.js, MySQL)
+Database Schema:
+Create a signs table to store sign information:
+  id: Integer, Primary Key, Auto-increment
+  gestureName: String, Required, Unique (e.g., "hello", "thank you")
+  description: Text, Optional (e.g., "Basic greeting")
+  created_at: Datetime, Auto-set on creation
+  updated_at: Datetime, Auto-updated on changes
+Create a videos table to store video metadata:
+  id: Integer, Primary Key, Auto-increment
+  title: String, Required (e.g., "hello_video_1.mp4")
+  description: Text, Optional
+  filePath: String, Required (e.g., "D:/Dataset/hello/hello_video_1.mp4")
+  signId: Integer, Foreign Key referencing signs(id)
+  created_at: Datetime, Auto-set on creation
+  updated_at: Datetime, Auto-updated on changes
+
+File System Integration:
+Write a script to scan the D:/Dataset directory.
+For each subdirectory (e.g., hello), create a record in the signs table with the gestureName as the subdirectory name.
+For each video file in the subdirectory, create a record in the videos table with the filePath pointing to the video file and signId linking to the corresponding sign.
+API Routes:
+GET /api/signs: Retrieve a list of all signs (support pagination with limit and offset query params).
+GET /api/signs/:id: Retrieve a specific sign by ID, including its associated videos.
+GET /api/signs/search?query=term: Search signs by gestureName or description (case-insensitive, partial match).
+GET /api/videos/:id: Retrieve a specific video by ID (return the filePath for streaming).
+POST /api/signs: Create a new sign (for admin use, optional).
+PUT /api/signs/:id: Update a sign by ID (for admin use, optional).
+DELETE /api/signs/:id: Delete a sign and its associated videos (for admin use, optional).
+
+Video Streaming:
+Implement an endpoint to stream videos from the local file system (e.g., GET /api/videos/stream/:id) using the filePath stored in the database.
+Frontend (React Native)
+Screens:
+Dictionary Screen (based on the first screenshot):
+A search bar at the top to search signs by gestureName or description.
+Category tabs (e.g., Common, Greetings, Questions, Emergency, Food, Travel) to filter signs.
+A scrollable list of signs with each item showing the gestureName and description (e.g., "Hello - Basic greeting").
+Tapping a sign navigates to the Sign Detail Screen.
+Sign Detail Screen (based on the second screenshot):
+A video player to play the sign’s video (load video from the backend streaming endpoint).
+Display the sign’s gestureName and description.
+Show a "How to Sign" section with instructions (e.g., for "Thank You", show the steps provided in the screenshot).
+Include an "Easy" difficulty label (hardcoded for now).
+Navigation:
+Use React Navigation for navigation between screens.
+Bottom navigation bar with tabs: Home, Recognize, Learn (active), Profile (as shown in the screenshots).
+Video Playback:
+Use a library like react-native-video to play videos streamed from the backend.
+General Notes
+The search functionality should be case-insensitive and support partial matches.
+The app should handle loading states and errors gracefully (e.g., show a spinner while fetching signs or streaming videos).
+Use Axios or Fetch for API calls in React Native.
+Follow the UI design closely for styling (e.g., colors, layout, fonts).
+Deliverables
+Backend:
+  - MySQL database schema creation script (schema.sql).
+  - A script to scan D:/Dataset and populate the database (populateDatabase.js).
+  - Express.js routes and controllers for the API (routes/signs.js, controllers/signController.js, routes/videos.js, controllers/videoController.js).
+  - Video streaming implementation.
+
+Frontend:
+  - React Native components for the Dictionary Screen (screens/DictionaryScreen.js).
+  - React Native components for the Sign Detail Screen (screens/SignDetailScreen.js).
+  - Navigation setup (navigation/AppNavigator.js).
+  - API service to handle backend requests (services/api.js).
+  - Design in Design folder Design/dictionary.png and Design/sign_detail.png
+
+Sample Code:
+Use the provided Sign and Video model classes as a reference for backend models (models/Sign.js, models/Video.js).
+
+Task
+Please generate the complete code for the above requirements, including:
+  - Backend: Database schema, file system script, API routes, and video streaming.
+  - Frontend: React Native screens, navigation, and API integration.
+  - Ensure the UI matches the provided screenshots.

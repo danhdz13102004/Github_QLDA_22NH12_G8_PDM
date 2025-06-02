@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState('alphabet');
+  const router = useRouter();
   
   const categories = [
     { id: 'alphabet', name: 'Alphabet', icon: 'text-outline' },
@@ -131,8 +133,24 @@ export default function Index() {
           <Ionicons name="search" size={24} color="#333" />
         </TouchableOpacity>
       </View>
-      
-      <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Dictionary Quick Access */}
+        <View style={styles.quickAccessContainer}>
+          <TouchableOpacity 
+            style={styles.dictionaryCard}
+            onPress={() => router.push('/Learn/dictionary')}
+          >
+            <View style={styles.dictionaryIcon}>
+              <Ionicons name="book" size={32} color="#fff" />
+            </View>
+            <View style={styles.dictionaryInfo}>
+              <Text style={styles.dictionaryTitle}>ASL Dictionary</Text>
+              <Text style={styles.dictionarySubtitle}>Browse all signs & videos</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#0066cc" />
+          </TouchableOpacity>
+        </View>
+        
         <View style={styles.categoriesContainer}>
           <FlatList
             horizontal
@@ -385,8 +403,46 @@ const styles = StyleSheet.create({
   practiceDescription: {
     fontSize: 12,
     color: '#666',
-  },
-  bottomPadding: {
+  },  bottomPadding: {
     height: 40,
+  },
+  quickAccessContainer: {
+    marginTop: 10,
+    marginHorizontal: 20,
+  },
+  dictionaryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    marginBottom: 10,
+  },
+  dictionaryIcon: {
+    backgroundColor: '#0066cc',
+    borderRadius: 10,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dictionaryInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  dictionaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  dictionarySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
   },
 });
