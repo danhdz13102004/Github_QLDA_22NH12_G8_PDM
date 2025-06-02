@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
   REGISTER: `${API_BASE_URL}/api/users/register`,
   LOGIN: `${API_BASE_URL}/api/users/login`,
   USER_PROFILE: `${API_BASE_URL}/api/users/profile`,
+  UPDATE_PROFILE: `${API_BASE_URL}/api/users/profile`,
+  CHANGE_PASSWORD: `${API_BASE_URL}/api/users/profile/:id/password`,
   COURSES: `${API_BASE_URL}/api/users/courses`,
   
   // Sign language related endpoints

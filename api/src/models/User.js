@@ -12,7 +12,7 @@ class User {
   static async findById(id) {
     try {
       const [rows] = await pool.execute(
-        'SELECT id, name, email, role, created_at FROM users WHERE id = ?',
+        'SELECT * FROM users WHERE id = ?',
         [id]
       );
       

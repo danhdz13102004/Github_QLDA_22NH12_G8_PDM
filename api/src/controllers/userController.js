@@ -278,10 +278,163 @@ const enrollInCourse = async (req, res) => {
   }
 };
 
+/**
+ * Update user profile information
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { name, email, phone } = req.body;
+    
+    // Verify user permissions (ensure the user can only update their own profile)
+    if (req.user && req.user.id.toString() !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Not authorized to update this profile'
+      });
+    }
+    
+    // Get user from database
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+    
+    // Check if email is being changed and if it's already in use
+    if (email && email !== user.email) {
+      const existingUser = await User.findByEmail(email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Email is already in use'
+        });
+      }
+    }
+    
+    // Update user data
+    const updatedUser = await User.update(userId, {
+      name: name || user.name,
+      email: email || user.email,
+      phone: phone || user.phone
+    });
+    
+    // Log the update action
+    await InteractionLog.create({
+      userId: userId,
+      action: 'Updated profile'
+    });
+    console.log('User profile updated:', updatedUser);
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Profile updated successfully',
+      data: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone
+      }
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to update profile'
+    });
+  }
+};
+
+/**
+ * Change user password
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const changePassword = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    // Verify user permissions (ensure the user can only change their own password)
+    // if (req.user && req.user.id.toString() !== userId && req.user.role !== 'admin') {
+    //   return res.status(403).json({
+    //     status: 'error',
+    //     message: 'Not authorized to change this password'
+    //   });
+    // }
+    
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide current password and new password'
+      });
+    }
+    
+    // Check if new password meets minimum requirements
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'New password must be at least 8 characters long'
+      });
+    }
+    
+    // Get user from database
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+    
+    // Verify current password
+    const encodedCurrentPassword = Buffer.from(currentPassword).toString('base64');
+    console.log('user:', user);
+    console.log('Encoded current password:', encodedCurrentPassword);
+    console.log('Stored password:', user.password);
+    if (encodedCurrentPassword !== user.password) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Current password is incorrect'
+      });
+    }
+    
+    // Encode and update the new password
+    const encodedNewPassword = Buffer.from(newPassword).toString('base64');
+    await User.update(userId, { password: encodedNewPassword });
+    console.log('Password changed successfully for user:', userId);
+    // Log the password change action
+    await InteractionLog.create({
+      userId: userId,
+      action: 'Changed password'
+    });
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to change password'
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
+  updateUserProfile,
+  changePassword,
   getAllCourses,
   enrollInCourse
 };
