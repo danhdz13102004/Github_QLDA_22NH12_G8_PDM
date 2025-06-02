@@ -6,7 +6,7 @@ import base64
 import mediapipe as mp
 from queue import Queue
 import tensorflow as tf
-from test_data_no_lstm import extract_keypoints, ViTSignLanguageModel, CLASS_LIST, SEQ_LEN, IMAGE_CAM_HEIGHT
+from test_model import extract_keypoints, ViTSignLanguageModel, CLASS_LIST, SEQ_LEN, IMAGE_CAM_HEIGHT
 
 # Global queues for inter-thread communication
 frame_queue = Queue()  # For storing received frames
@@ -16,7 +16,7 @@ word_queue = Queue()  # For storing predicted words
 async def process_frames():
     """Thread function to process frames and predict signs"""
     time_seq_feature = []
-    model = tf.keras.models.load_model('../Model/model_07_05_2025_15_07_1746630447_no_lstm_108_dim.keras')
+    model = tf.keras.models.load_model('../Model/model_02_06_2025_13_55_1748872509.keras')
     mp_holistic = mp.solutions.holistic.Holistic(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
     while True:
@@ -46,7 +46,7 @@ async def process_frames():
             #     continue
 
             # Extract features
-            keypoints = extract_keypoints(res, frame_rgb.shape)
+            keypoints, _ = extract_keypoints(res)
             time_seq_feature.append(keypoints)
 
             # When we have enough frames, predict
@@ -55,7 +55,7 @@ async def process_frames():
                 prediction = model.predict(feature_batch, verbose=0)
                 predicted_class = np.argmax(prediction[0])
 
-                print(predicted_class)
+                print(CLASS_LIST[predicted_class])
                 
                 # Only accept predictions with high confidence
                 if prediction[0][predicted_class] >= 0.8:
@@ -63,7 +63,7 @@ async def process_frames():
                 else:
                     word_queue.put("...")  # Use ellipsis for uncertain predictions
                     
-                time_seq_feature = time_seq_feature[10:]  # Reset for next sequence
+                time_seq_feature = time_seq_feature[5:] # Reset for next sequence
 
         except Exception as e:
             print(f"Error processing frame: {str(e)}")
