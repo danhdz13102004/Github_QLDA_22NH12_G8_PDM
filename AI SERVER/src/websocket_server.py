@@ -63,7 +63,7 @@ async def process_frames():
                 else:
                     word_queue.put("...")  # Use ellipsis for uncertain predictions
                     
-                time_seq_feature = time_seq_feature[5:] # Reset for next sequence
+                time_seq_feature = [] # Reset for next sequence
 
         except Exception as e:
             print(f"Error processing frame: {str(e)}")
