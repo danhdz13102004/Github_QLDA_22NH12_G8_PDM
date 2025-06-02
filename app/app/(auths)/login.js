@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../../constants/ApiConfig';
 
 export default function Login() {
@@ -44,9 +45,10 @@ export default function Login() {
           throw new Error(data.message || 'Failed to sign in');
         }
         
-        // Store the token and redirect to home screen
-        // Note: In a real app, you would store this token securely
-        // using something like Secure Store or AsyncStorage
+        // Store the user ID and token in AsyncStorage
+        console.log('Login successful:', data.data);
+        await AsyncStorage.setItem('userId', data.data.user.id.toString());
+        await AsyncStorage.setItem('userToken', data.data.token);
         router.replace('/(tabs)/Home');
       } catch (error) {
         Alert.alert('Error', error.message);

@@ -11,7 +11,13 @@ router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
 
 // Get user profile
-router.get('/profile/:id', authMiddleware, userController.getUserProfile);
+router.get('/profile/:id', userController.getUserProfile);
+
+// Update user profile information
+router.put('/profile/:id', userController.updateUserProfile);
+
+// Change user password
+router.put('/profile/:id/password', userController.changePassword);
 
 // Course routes
 router.get('/courses', userController.getAllCourses);
