@@ -80,10 +80,11 @@ class Sign {
     try {
       const { limit = 50, offset = 0 } = options;
       
-      const [rows] = await pool.execute(
-        'SELECT * FROM signs ORDER BY gestureName LIMIT ? OFFSET ?',
-        [limit, offset]
-      );
+      // Use direct string interpolation for LIMIT and OFFSET
+      // This is safe for these parameters since they're already validated as numbers
+      const query = `SELECT * FROM signs ORDER BY gestureName LIMIT ${Number(limit)} OFFSET ${Number(offset)}`;
+      
+      const [rows] = await pool.query(query);
       
       return rows;
     } catch (error) {

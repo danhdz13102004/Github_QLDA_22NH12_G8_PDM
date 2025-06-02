@@ -14,6 +14,7 @@ const { testConnection, initializeDatabase } = require('./config/db');
 // Import routes
 const signLanguageRoutes = require('./routes/signLanguage');
 const userRoutes = require('./routes/user');
+const quizRoutes = require('./routes/quiz');
 const signsRoutes = require('./routes/signs');
 const videosRoutes = require('./routes/videos');
 
@@ -42,6 +43,7 @@ if (process.env.NODE_ENV === 'development') {
 // Routes
 app.use('/api/sign-language', signLanguageRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/quiz', quizRoutes);
 app.use('/api/signs', signsRoutes);
 app.use('/api/videos', videosRoutes);
 

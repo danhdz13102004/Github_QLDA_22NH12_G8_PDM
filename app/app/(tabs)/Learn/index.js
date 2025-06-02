@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 export default function Index() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('alphabet');
   const router = useRouter();
   
@@ -195,7 +196,10 @@ export default function Index() {
           </View>
         </View>
         
-        <TouchableOpacity style={styles.practiceCard}>
+        <TouchableOpacity 
+          style={styles.practiceCard}
+          onPress={() => router.push('/(tabs)/Practice')}
+        >
           <View style={styles.practiceContent}>
             <Ionicons name="fitness-outline" size={36} color="#6c5ce7" />
             <View style={styles.practiceTextContainer}>

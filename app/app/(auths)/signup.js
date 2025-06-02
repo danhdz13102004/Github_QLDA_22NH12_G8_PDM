@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import appConfig from '../../configs/config';
+import { API_ENDPOINTS } from '../../constants/ApiConfig';
 export default function SignUp() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -41,7 +42,7 @@ export default function SignUp() {
     if (validateForm()) {
       try {
         setIsLoading(true);
-          const response = await fetch(`${appConfig.API_URL}/user/register`, {
+          const response = await fetch(`${API_ENDPOINTS.REGISTER}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -19,6 +19,9 @@ export default function TabsLayout() {
             case 'Learn/index':
               iconName = focused ? 'book' : 'book-outline';
               break;
+            case 'Practice/index':
+              iconName = focused ? 'fitness' : 'fitness-outline';
+              break;
             case 'Profile/index':
               iconName = focused ? 'person' : 'person-outline';
               break;

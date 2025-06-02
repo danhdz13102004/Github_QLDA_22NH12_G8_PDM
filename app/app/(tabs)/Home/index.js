@@ -2,8 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function Index() {
+  const router = useRouter();
+  
+  const handleNavigation = (route) => {
+    router.push(route);
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -20,7 +27,7 @@ export default function Index() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.recognizeButton}>
+        <TouchableOpacity style={styles.recognizeButton} onPress={() => handleNavigation('/(tabs)/Recognize')}>
           <View style={styles.recognizeIcon}>
             <Ionicons name="hand-left-outline" size={30} color="white" />
           </View>
@@ -31,22 +38,22 @@ export default function Index() {
         </TouchableOpacity>
 
         <View style={styles.featureGrid}>
-          <TouchableOpacity style={styles.featureCard}>
+          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Learn')}>
             <Ionicons name="book-outline" size={30} color="#666" />
             <Text style={styles.featureText}>Dictionary</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.featureCard}>
+          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Practice')}>
             <Ionicons name="fitness-outline" size={30} color="#666" />
             <Text style={styles.featureText}>Practice</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.featureCard}>
+          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Learn')}>
             <Ionicons name="school-outline" size={30} color="#666" />
             <Text style={styles.featureText}>Lessons</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.featureCard}>
+          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Profile')}>
             <Ionicons name="time-outline" size={30} color="#666" />
             <Text style={styles.featureText}>History</Text>
           </TouchableOpacity>
