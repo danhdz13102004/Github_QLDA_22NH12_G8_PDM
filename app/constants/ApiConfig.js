@@ -26,7 +26,7 @@ export const API_ENDPOINTS = {
   QUIZ_HISTORY: `${API_BASE_URL}/api/quiz/history/:userId`,
   
   // Signs related endpoints
-  SIGNS: `${API_BASE_URL}/api/signs`,
+  SIGNS_LIST: `${API_BASE_URL}/api/signs`,
   SIGNS_SEARCH: `${API_BASE_URL}/api/signs/search`,
   VIDEOS_STREAM: `${API_BASE_URL}/api/videos/stream`,
 };

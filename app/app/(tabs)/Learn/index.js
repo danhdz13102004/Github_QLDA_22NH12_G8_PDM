@@ -16,7 +16,6 @@ import { useRouter } from 'expo-router';
 export default function Index() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('alphabet');
-  const router = useRouter();
   
   const categories = [
     { id: 'alphabet', name: 'Alphabet', icon: 'text-outline' },
