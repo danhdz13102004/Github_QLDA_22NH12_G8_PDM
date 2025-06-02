@@ -6,7 +6,9 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node src/utils/seedDatabase.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "load_videos": "node src/utils/populateVideosToDatabase.js",
+    "load_videos_description": "node src/utils/updateDescriptions.js"
   },
   "keywords": [],
   "author": "",

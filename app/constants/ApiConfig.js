@@ -4,7 +4,7 @@
  */
 
 // Base API URL
-export const API_BASE_URL = 'http://10.0.2.2:3000';
+export const API_BASE_URL = 'http://192.168.1.14:3000';
 
 // User related endpoints
 export const API_ENDPOINTS = {
@@ -24,4 +24,9 @@ export const API_ENDPOINTS = {
   QUIZ_DEMO: `${API_BASE_URL}/api/quiz/demo`,
   QUIZ_SUBMIT: `${API_BASE_URL}/api/quiz/submit`,
   QUIZ_HISTORY: `${API_BASE_URL}/api/quiz/history/:userId`,
+  
+  // Signs related endpoints
+  SIGNS_LIST: `${API_BASE_URL}/api/signs`,
+  SIGNS_SEARCH: `${API_BASE_URL}/api/signs/search`,
+  VIDEOS_STREAM: `${API_BASE_URL}/api/videos/stream`,
 };
