@@ -12,10 +12,10 @@ const seedDatabase = async () => {
     
     // Check if we already have data
     const [userRows] = await pool.execute('SELECT COUNT(*) as count FROM users');
-    if (userRows[0].count > 0) {
-      console.log('Database already has data, skipping seed');
-      return;
-    }
+    // if (userRows[0].count > 0) {
+    //   console.log('Database already has data, skipping seed');
+    //   return;
+    // }
     
     // Create admin user
     await pool.execute(
@@ -42,7 +42,17 @@ const seedDatabase = async () => {
       { gestureName: 'Help', description: 'Asking for assistance' },
       { gestureName: 'Love', description: 'Expression of affection' },
       { gestureName: 'Friend', description: 'Referring to a friend' },
-      { gestureName: 'Family', description: 'Referring to family' }
+      { gestureName: 'Family', description: 'Referring to family' },
+      { gestureName: 'Good', description: 'Positive expression' },
+      { gestureName: 'Bad', description: 'Negative expression' },
+      { gestureName: 'Work', description: 'Referring to work or job' },
+      { gestureName: 'School', description: 'Referring to education or school' },
+      { gestureName: 'Food', description: 'Referring to food or eating' },
+      { gestureName: 'Water', description: 'Referring to water or drinking' },
+      { gestureName: 'Home', description: 'Referring to home or house' },
+      { gestureName: 'Book', description: 'Referring to a book or reading' },
+      { gestureName: 'Time', description: 'Referring to time or clock' },
+      { gestureName: 'Name', description: 'Asking for a name or introducing' }
     ];
     
     for (const sign of signs) {
@@ -54,12 +64,28 @@ const seedDatabase = async () => {
     console.log('Signs created');
     
     // Seed videos data
-    const videoBaseFolder = '/uploads/videos/';
+    const videoBaseFolder = '';
     const videos = [
       { title: 'How to Sign Hello', description: 'Tutorial for Hello sign', filePath: `${videoBaseFolder}hello.mp4`, signName: 'Hello' },
       { title: 'Thank You in Sign Language', description: 'Learn to say thank you', filePath: `${videoBaseFolder}thank_you.mp4`, signName: 'Thank You' },
       { title: 'Signing Yes', description: 'Quick tutorial on Yes', filePath: `${videoBaseFolder}yes.mp4`, signName: 'Yes' },
       { title: 'Signing No', description: 'Tutorial for No sign', filePath: `${videoBaseFolder}no.mp4`, signName: 'No' },
+      { title: 'Please in Sign Language', description: 'Learn to sign Please', filePath: `${videoBaseFolder}please.mp4`, signName: 'Please' },
+      { title: 'How to Sign Sorry', description: 'Tutorial for Sorry sign', filePath: `${videoBaseFolder}sorry.mp4`, signName: 'Sorry' },
+      { title: 'Help Sign Tutorial', description: 'Learn to sign for Help', filePath: `${videoBaseFolder}help.mp4`, signName: 'Help' },
+      { title: 'Love in Sign Language', description: 'Tutorial for expressing Love', filePath: `${videoBaseFolder}love.mp4`, signName: 'Love' },
+      { title: 'Signing Friend', description: 'How to sign Friend', filePath: `${videoBaseFolder}friend.mp4`, signName: 'Friend' },
+      { title: 'Family Sign Tutorial', description: 'Learn to sign Family', filePath: `${videoBaseFolder}family.mp4`, signName: 'Family' },
+      { title: 'Good in Sign Language', description: 'Tutorial for Good sign', filePath: `${videoBaseFolder}good.mp4`, signName: 'Good' },
+      { title: 'How to Sign Bad', description: 'Learning the Bad sign', filePath: `${videoBaseFolder}bad.mp4`, signName: 'Bad' },
+      { title: 'Work Sign Tutorial', description: 'Tutorial for Work sign', filePath: `${videoBaseFolder}work.mp4`, signName: 'Work' },
+      { title: 'School in Sign Language', description: 'Learn to sign School', filePath: `${videoBaseFolder}school.mp4`, signName: 'School' },
+      { title: 'Food Sign Tutorial', description: 'How to sign Food', filePath: `${videoBaseFolder}food.mp4`, signName: 'Food' },
+      { title: 'Water Sign Tutorial', description: 'Tutorial for Water sign', filePath: `${videoBaseFolder}water.mp4`, signName: 'Water' },
+      { title: 'Home in Sign Language', description: 'Learn to sign Home', filePath: `${videoBaseFolder}home.mp4`, signName: 'Home' },
+      { title: 'Book Sign Tutorial', description: 'How to sign Book', filePath: `${videoBaseFolder}book.mp4`, signName: 'Book' },
+      { title: 'Time in Sign Language', description: 'Tutorial for Time sign', filePath: `${videoBaseFolder}time.mp4`, signName: 'Time' },
+      { title: 'Name Sign Tutorial', description: 'Learn to sign Name', filePath: `${videoBaseFolder}name.mp4`, signName: 'Name' }
     ];
     
     for (const video of videos) {
@@ -129,7 +155,7 @@ const seedDatabase = async () => {
     
     // Intermediate course signs
     const intermediateCourse = courseMap['Intermediate Sign Language'];
-    const intermediateSigns = ['Please', 'Sorry', 'Help', 'Love'];
+    const intermediateSigns = ['Please', 'Sorry', 'Help', 'Love', 'Good', 'Bad', 'Work', 'School'];
     for (const sign of intermediateSigns) {
       await pool.execute(
         'INSERT INTO course_sign (courseId, signId) VALUES (?, ?)',
