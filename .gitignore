@@ -19,3 +19,5 @@ npm-debug.*
 web-build/
 .DS_Store
 .env
+
+!run_ai_server_guide.md
