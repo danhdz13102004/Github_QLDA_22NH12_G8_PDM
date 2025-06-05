@@ -307,12 +307,18 @@ export default function SignDetail() {
 
         {/* Practice Section */}
         <View style={styles.practiceSection}>
-          <TouchableOpacity style={styles.practiceButton}>
+          <TouchableOpacity 
+            style={styles.practiceButton}
+            onPress={() => router.push('/(tabs)/Recognize')}
+          >
             <Ionicons name="camera-outline" size={24} color="#fff" />
             <Text style={styles.practiceButtonText}>Practice with Camera</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.quizButton}>
+          <TouchableOpacity 
+            style={styles.quizButton}
+            onPress={() => router.push('/(tabs)/Practice')}
+          >
             <Ionicons name="help-circle-outline" size={24} color="#0066cc" />
             <Text style={styles.quizButtonText}>Take Quiz</Text>
           </TouchableOpacity>
