@@ -101,7 +101,7 @@ export default function Dictionary() {
 
   const handleSignPress = (sign) => {
     router.push({
-      pathname: '/Learn/signDetail',
+      pathname: '/Dictionary/signDetail',
       params: { signId: sign.id, signName: sign.gestureName }
     });
   };
@@ -172,12 +172,6 @@ export default function Dictionary() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>ASL Dictionary</Text>
         <View style={styles.headerRight}>
           <Text style={styles.signCount}>{filteredSigns.length} signs</Text>
