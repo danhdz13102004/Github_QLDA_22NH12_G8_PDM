@@ -70,7 +70,15 @@ export default function TabsLayout() {
           headerTitle: 'Recognize',
           headerShown: false,
         }}
-      />      
+      />     
+            <Tabs.Screen
+        name="Profile/index"
+        options={{
+          title: 'Profile',
+          headerTitle: 'Profile',
+          headerShown: false,
+        }}
+      /> 
       <Tabs.Screen
         name="Dictionary/index"
         options={{
@@ -78,15 +86,10 @@ export default function TabsLayout() {
           headerTitle: 'Dictionary',
           headerShown: false,
         }}
-      />      
-      <Tabs.Screen
-        name="Profile/index"
-        options={{
-          title: 'Profile',
-          headerTitle: 'Profile',
-          headerShown: false,
-        }}
       />
+
     </Tabs>
+
+    
   );
 }

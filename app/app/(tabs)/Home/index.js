@@ -17,7 +17,7 @@ export default function Index() {
         <View style={styles.header}>
           <View style={styles.profileContainer}>
             <Image 
-              source={{ uri: 'https://via.placeholder.com/40' }} 
+              source={{ uri: 'https://static.vecteezy.com/system/resources/previews/039/845/042/non_2x/male-default-avatar-profile-gray-picture-grey-photo-placeholder-gray-profile-anonymous-face-picture-illustration-isolated-on-white-background-free-vector.jpg' }} 
               style={styles.profileImage} 
             />
             <View>
@@ -38,7 +38,7 @@ export default function Index() {
         </TouchableOpacity>
 
         <View style={styles.featureGrid}>
-          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Learn')}>
+          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Dictionary')}>
             <Ionicons name="book-outline" size={30} color="#666" />
             <Text style={styles.featureText}>Dictionary</Text>
           </TouchableOpacity>
@@ -48,18 +48,18 @@ export default function Index() {
             <Text style={styles.featureText}>Practice</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Learn')}>
-            <Ionicons name="school-outline" size={30} color="#666" />
-            <Text style={styles.featureText}>Lessons</Text>
+          <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Recognize')}>
+            <Ionicons name="camera-outline" size={30} color="#666" />
+            <Text style={styles.featureText}>Recognize</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.featureCard} onPress={() => handleNavigation('/(tabs)/Profile')}>
-            <Ionicons name="time-outline" size={30} color="#666" />
-            <Text style={styles.featureText}>History</Text>
+            <Ionicons name="person-outline" size={30} color="#666" />
+            <Text style={styles.featureText}>Profile</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.recentSection}>
+        {/* <View style={styles.recentSection}>
           <Text style={styles.sectionTitle}>Recent Translations</Text>
           
           <View style={styles.translationItem}>
@@ -73,7 +73,7 @@ export default function Index() {
             <View style={styles.dot} />
             <View style={styles.dot} />
           </View>
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   );
