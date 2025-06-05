@@ -16,7 +16,7 @@ export default function TabsLayout() {
             case 'Recognize/index':
               iconName = focused ? 'camera' : 'camera-outline';
               break;
-            case 'Learn/index':
+            case 'Dictionary/index':
               iconName = focused ? 'book' : 'book-outline';
               break;
             case 'Practice/index':
@@ -72,10 +72,10 @@ export default function TabsLayout() {
         }}
       />      
       <Tabs.Screen
-        name="Learn/index"
+        name="Dictionary/index"
         options={{
-          title: 'Learn',
-          headerTitle: 'Learn',
+          title: 'Dictionary',
+          headerTitle: 'Dictionary',
           headerShown: false,
         }}
       />      
