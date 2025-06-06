@@ -21,3 +21,5 @@ web-build/
 .env
 
 !run_ai_server_guide.md
+
+client_secret_*
