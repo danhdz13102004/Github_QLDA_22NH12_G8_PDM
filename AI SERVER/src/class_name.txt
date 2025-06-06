@@ -1,4 +1,3 @@
-0
 1
 2
 3
@@ -8,15 +7,13 @@
 7
 8
 9
-goodbye
 hello
+home
 i
 love
 my
 name
 no
-sad
-sorry
 what
 where
 why

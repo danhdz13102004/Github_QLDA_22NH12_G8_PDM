@@ -136,7 +136,7 @@ export default function Index() {
             ref={cameraRef}
             style={styles.camera}
             facing={cameraType}
-            pictureSize='512x288'
+            pictureSize='640x480'
             animateShutter={false}
           >
             <View style={styles.recognitionOverlay}>

@@ -88,7 +88,7 @@ async def handle_websocket(websocket):
                 while not word_queue.empty():
                     word = word_queue.get()
                     await websocket.send(word)
-                await asyncio.sleep(0.001)
+                # await asyncio.sleep(0.001)
             except Exception as e:
                 print(f"Error handling message: {str(e)}")
                 continue
