@@ -2,6 +2,36 @@ const User = require('../models/User');
 const InteractionLog = require('../models/InteractionLog');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
+// Store OTPs temporarily with expiration (in production, use Redis or database)
+const otpStore = new Map();
+
+// Helper function to clean expired OTPs
+const cleanExpiredOTPs = () => {
+  const now = Date.now();
+  for (const [email, data] of otpStore.entries()) {
+    if (now > data.expiresAt) {
+      otpStore.delete(email);
+    }
+  }
+};
+
+// Clean expired OTPs every 5 minutes
+setInterval(cleanExpiredOTPs, 5 * 60 * 1000);
+
+// Configure nodemailer with Google OAuth2
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    type: 'OAuth2',
+    user: process.env.EMAIL_USER,
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+  }
+});
 
 /**
  * Register a new user
@@ -429,6 +459,220 @@ const changePassword = async (req, res) => {
   }
 };
 
+/**
+ * Forgot password - initiate password reset process
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Validate input
+    if (!email) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide your email'
+      });
+    }
+    
+    // Check if user exists
+    const user = await User.findByEmail(email);
+    
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + (5 * 60 * 1000); // 5 minutes from now
+    
+    // Store OTP with expiration
+    otpStore.set(email, { 
+      otp, 
+      expiresAt,
+      createdAt: Date.now()
+    });
+
+    // Send OTP via email using NodeMailer
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_FROM_NAME || 'Sign Language App'}" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset OTP - Sign Language App',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6c5ce7;">Password Reset Request</h2>
+          <p>Hello,</p>
+          <p>You have requested to reset your password for your Sign Language App account.</p>
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <h3 style="color: #6c5ce7; margin: 0;">Your OTP Code</h3>
+            <h1 style="color: #333; font-size: 32px; letter-spacing: 4px; margin: 10px 0;">${otp}</h1>
+          </div>
+          <p><strong>Important:</strong> This OTP is valid for 5 minutes only.</p>
+          <p>If you didn't request this password reset, please ignore this email and your password will remain unchanged.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #666; font-size: 12px;">© ${new Date().getFullYear()} Sign Language App. All rights reserved.</p>
+        </div>
+      `,
+      text: `Your OTP for password reset is ${otp}. It is valid for 5 minutes. If you didn't request this, please ignore this email.`
+    });
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'OTP sent to your email',
+      data: {
+        email
+      }
+    });
+  } catch (error) {
+    console.error('Error in forgot password:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to send OTP'
+    });
+  }
+};
+
+/**
+ * Verify OTP for password reset
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    // Validate input
+    if (!email || !otp) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide email and OTP'
+      });
+    }
+    
+    // Clean expired OTPs first
+    cleanExpiredOTPs();
+    
+    // Check if OTP exists and is valid
+    const storedData = otpStore.get(email);
+    
+    if (!storedData) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid or expired OTP'
+      });
+    }
+    
+    // Check if OTP has expired
+    if (Date.now() > storedData.expiresAt) {
+      otpStore.delete(email);
+      return res.status(400).json({
+        status: 'error',
+        message: 'OTP has expired. Please request a new one.'
+      });
+    }
+    
+    // Check if OTP is correct
+    if (storedData.otp !== otp) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid OTP'
+      });
+    }
+    
+    // OTP is valid, proceed to reset password
+    res.status(200).json({
+      status: 'success',
+      message: 'OTP verified successfully',
+      data: {
+        email
+      }
+    });
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to verify OTP'
+    });
+  }
+};
+
+/**
+ * Reset password
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    
+    // Validate input
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide email, OTP, and new password'
+      });
+    }
+    
+    // Clean expired OTPs first
+    cleanExpiredOTPs();
+    
+    // Check if OTP exists and is valid
+    const storedData = otpStore.get(email);
+    
+    if (!storedData) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid or expired OTP'
+      });
+    }
+    
+    // Check if OTP has expired
+    if (Date.now() > storedData.expiresAt) {
+      otpStore.delete(email);
+      return res.status(400).json({
+        status: 'error',
+        message: 'OTP has expired. Please request a new one.'
+      });
+    }
+    
+    // Check if OTP is correct
+    if (storedData.otp !== otp) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid OTP'
+      });
+    }
+    
+    // Validate new password
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Password must be at least 6 characters long'
+      });
+    }
+    
+    // Encode and update the new password
+    const encodedNewPassword = Buffer.from(newPassword).toString('base64');
+    await User.updateByEmail(email, { password: encodedNewPassword });
+    
+    // Remove OTP from store
+    otpStore.delete(email);
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset successfully'
+    });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to reset password'
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -436,5 +680,8 @@ module.exports = {
   updateUserProfile,
   changePassword,
   getAllCourses,
-  enrollInCourse
+  enrollInCourse,
+  forgotPassword,
+  verifyOtp,
+  resetPassword
 };

@@ -10,6 +10,11 @@ router.post('/register', userController.registerUser);
 // Login user
 router.post('/login', userController.loginUser);
 
+// Forgot password routes
+router.post('/forgot-password', userController.forgotPassword);
+router.post('/verify-otp', userController.verifyOtp);
+router.post('/reset-password', userController.resetPassword);
+
 // Get user profile
 router.get('/profile/:id', userController.getUserProfile);
 

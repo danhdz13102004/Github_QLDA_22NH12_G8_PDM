@@ -15,6 +15,11 @@ export const API_ENDPOINTS = {
   CHANGE_PASSWORD: `${API_BASE_URL}/api/users/profile/:id/password`,
   COURSES: `${API_BASE_URL}/api/users/courses`,
   
+  // Forgot password endpoints
+  FORGOT_PASSWORD: `${API_BASE_URL}/api/users/forgot-password`,
+  VERIFY_OTP: `${API_BASE_URL}/api/users/verify-otp`,
+  RESET_PASSWORD: `${API_BASE_URL}/api/users/reset-password`,
+  
   // Sign language related endpoints
   SIGNS: `${API_BASE_URL}/api/sign-language/signs`,
   SIGN_DETAIL: `${API_BASE_URL}/api/sign-language/signs/:id`,

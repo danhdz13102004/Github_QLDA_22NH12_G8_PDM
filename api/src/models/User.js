@@ -174,6 +174,44 @@ class User {
       throw error;
     }
   }
+
+  /**
+   * Update user data by email
+   * @param {string} email - User email
+   * @param {Object} updateData - Data to update
+   * @returns {Promise<boolean>} - Success status
+   */
+  static async updateByEmail(email, updateData) {
+    try {
+      // Build SET clause dynamically based on updateData
+      const allowedFields = ['name', 'email', 'password', 'role'];
+      const updates = [];
+      const values = [];
+      
+      for (const [key, value] of Object.entries(updateData)) {
+        if (allowedFields.includes(key)) {
+          updates.push(`${key} = ?`);
+          values.push(value);
+        }
+      }
+      
+      if (updates.length === 0) {
+        return false;
+      }
+      
+      values.push(email);
+      
+      const [result] = await pool.execute(
+        `UPDATE users SET ${updates.join(', ')} WHERE email = ?`,
+        values
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error updating user by email:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = User;
