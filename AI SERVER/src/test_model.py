@@ -10,7 +10,7 @@ import math
 from scipy.spatial.transform import Rotation
 
 SEQ_LEN = 10
-IMAGE_CAM_HEIGHT = 720
+IMAGE_CAM_HEIGHT = 480
 IMAGE_CAM_WIDTH = 1080
 FILE_PATH_FOR_CLASS = 'class_name.txt'
 CLASS_LIST = [name.strip() for name in open(FILE_PATH_FOR_CLASS,'r').readlines()]
@@ -79,7 +79,7 @@ class ViTSignLanguageModel(keras.Model):
             lambda tensor: keras.layers.concatenate((keras.ops.repeat(self.class_token, keras.ops.shape(tensor)[0], axis=0), tensor), axis = 1),
             output_shape=(seq_len + 1, 162))
         self.dropout = keras.layers.Dropout(0.2)
-        self.encoders = [TransformerEncoder(162, 9, 512) for _ in range(4)]
+        self.encoders = [TransformerEncoder(162, 6, 512) for _ in range(4)]
         self.norm1 = keras.layers.LayerNormalization(epsilon=1e-6)
         self.glo_avg_pool = keras.layers.GlobalAveragePooling1D()
         self.norm2 = keras.layers.LayerNormalization(epsilon=1e-6)
@@ -297,73 +297,3 @@ def extract_keypoints(res_holistic):
         hand_landmarks['Right'] = normalized_hand(hand_landmarks['Right'])
 
     return np.concatenate((pose_landmarks,hand_landmarks['Left'], hand_landmarks['Right']), axis = None), None
-
-
-def feed():
-    '''
-    Task of feed thread
-    '''
-    video_reader =  cv2.VideoCapture(0)
-    # video_reader =  cv2.VideoCapture(os.path.join(os.pardir,'dataset','DataSet','often','d7.mp4'))
-    #Init
-    time_seq_feature = []
-    #Loop    
-    while video_reader.isOpened():
-        success, frame = video_reader.read()
-        if not success:
-            break
-        #process
-        scale = IMAGE_CAM_HEIGHT / frame.shape[0]
-        frame = cv2.resize(frame,(IMAGE_CAM_WIDTH, IMAGE_CAM_HEIGHT))
-        frame = cv2.flip(frame, 1)
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        res = mp_holistic.process(frame_rgb)
-        #Extract
-        time_seq_feature.append(extract_keypoints(res)[0])
-
-        #display
-        drawLandmarks(frame, res)
-        cv2.imshow('video',frame)
-        #Put to queue
-        if len(time_seq_feature) == SEQ_LEN:
-            try:
-                sample_queue.put([np.array([time_seq_feature])])
-            except Exception as e:
-                print('FEED THREAD:',e)
-            time_seq_feature = []
-        if cv2.waitKey(1)&0xFF == ord('q'):
-            break
-    #END
-    sample_queue.put(None)
-    video_reader.release()
-    cv2.destroyAllWindows()
-
-
-
-def predict(my_model: keras.Model):
-    '''
-    Task of predict
-    '''
-    #Loop
-    while True:
-        try:
-            x = sample_queue.get()
-        except Exception as e:
-            print('PREDICT THREAD:',e)
-            continue
-        if not x:
-            print('PREDICT THREAD: End')
-            break
-        y = my_model.predict(x[0],verbose=0)
-        class_id = np.argmax(y)
-        # print('PREDICT THREAD:','predict word','\033[30;31m'+CLASS_LIST[class_id]+'\033[0m'+f': {round(y[0][class_id]*100)}')
-        if y[0][class_id] < 0.8: 
-            class_id = len(CLASS_LIST) - 1
-        print('PREDICT THREAD:','predict word','\033[30;31m'+CLASS_LIST[class_id]+'\033[0m')
-
-if __name__=='__main__':
-    my_model = keras.models.load_model(os.path.join(os.pardir,'Model','model_02_06_2025_13_55_1748872509.keras'))
-    feed_thread = Thread(target=feed)
-    predict_thread = Thread(target=predict, args=(my_model,))
-    feed_thread.start()
-    predict_thread.start()
