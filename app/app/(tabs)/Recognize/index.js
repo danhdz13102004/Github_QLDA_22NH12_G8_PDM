@@ -15,7 +15,7 @@ export default function Index() {
   const cameraRef = useRef(null);
   const wsRef = useRef(null);
   const frameCapturingRef = useRef(false);
-
+  const isCapturing = useRef(false)
   useEffect(() => {
     if (!permission) requestPermission();
 
@@ -51,7 +51,6 @@ export default function Index() {
       Alert.alert('Error', 'Camera not ready');
       return;
     }
-
     try {
       setIsRecognizing(true);
       wsRef.current = new WebSocket(WS_URL);
@@ -87,15 +86,18 @@ export default function Index() {
 
   const captureFrame = async () => {
     if (!cameraRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-
+    if (isCapturing.current) return;
+    isCapturing.current = true;
     try {
-      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.5});
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.1});
       if (photo?.base64) {
         wsRef.current.send(photo.base64);
         console.log('📤 Frame sent');
       }
     } catch (error) {
       console.error('❌ Frame capture/send error:', error);
+    } finally{
+      isCapturing.current = false
     }
   };
 
@@ -134,7 +136,7 @@ export default function Index() {
             ref={cameraRef}
             style={styles.camera}
             facing={cameraType}
-            ratio="4:3"
+            pictureSize='512x288'
             animateShutter={false}
           >
             <View style={styles.recognitionOverlay}>
