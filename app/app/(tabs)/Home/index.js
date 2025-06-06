@@ -21,7 +21,7 @@ export default function Index() {
               style={styles.profileImage} 
             />
             <View>
-              <Text style={styles.greeting}>Hi, Danh!</Text>
+              <Text style={styles.greeting}>Welcome !</Text>
               <Text style={styles.subtitle}>Ready to communicate?</Text>
             </View>
           </View>
