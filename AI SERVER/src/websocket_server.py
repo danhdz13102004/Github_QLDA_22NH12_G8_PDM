@@ -6,7 +6,7 @@ import base64
 import mediapipe as mp
 from queue import Queue
 import tensorflow as tf
-from test_model import extract_keypoints, ViTSignLanguageModel, CLASS_LIST, SEQ_LEN, IMAGE_CAM_HEIGHT
+from test_model import extract_keypoints, ViTSignLanguageModel, CLASS_LIST, SEQ_LEN, IMAGE_CAM_HEIGHT, drawLandmarks, mp_holistic
 
 # Global queues for inter-thread communication
 frame_queue = Queue()  # For storing received frames
@@ -16,12 +16,11 @@ word_queue = Queue()  # For storing predicted words
 async def process_frames():
     """Thread function to process frames and predict signs"""
     time_seq_feature = []
-    model = tf.keras.models.load_model('../Model/model_02_06_2025_13_55_1748872509.keras')
-    mp_holistic = mp.solutions.holistic.Holistic(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
-
+    model = tf.keras.models.load_model('../Model/model_05_06_2025_16_05_1749139522_nocnn.keras')
+    pre = ''
     while True:
         if frame_queue.empty():
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.001)
             continue
 
         frame = frame_queue.get()
@@ -30,20 +29,21 @@ async def process_frames():
 
         try:
             # Process frame
-            scale = IMAGE_CAM_HEIGHT / frame.shape[0]
-            frame = cv2.resize(frame, (int(frame.shape[1]*scale), int(frame.shape[0]*scale)))
+            # scale = IMAGE_CAM_HEIGHT / frame.shape[0]
+            # frame = cv2.resize(frame, (int(frame.shape[1]*scale), int(frame.shape[0]*scale)))
             frame = cv2.flip(frame, 1)
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             res = mp_holistic.process(frame_rgb)
             #display
-            # try:
-            #     cv2.imshow('View from app',cv2.resize(frame,(640,480)))
-            #     if cv2.waitKey(0.001) & 0xFF == ord('q'):  # Wait 1ms and check if 'q' is pressed to quit
-            #         cv2.destroyAllWindows()
-            #         break
-            # except Exception as e:
-            #     print(e)
-            #     continue
+            drawLandmarks(frame,res)
+            try:
+                cv2.imshow('View from app',frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):  # Wait 1ms and check if 'q' is pressed to quit
+                    cv2.destroyAllWindows()
+                    break
+            except Exception as e:
+                print(e)
+                continue
 
             # Extract features
             keypoints, _ = extract_keypoints(res)
@@ -58,13 +58,14 @@ async def process_frames():
                 print(CLASS_LIST[predicted_class])
                 
                 # Only accept predictions with high confidence
-                if prediction[0][predicted_class] >= 0.8:
-                    word_queue.put(CLASS_LIST[predicted_class])
+                if prediction[0][predicted_class] >= 0.75:
+                    predicted_word = CLASS_LIST[predicted_class]
                 else:
-                    word_queue.put("...")  # Use ellipsis for uncertain predictions
-                    
+                    predicted_word = '...'
+                if predicted_word!=pre:
+                    word_queue.put(predicted_word)  # Use ellipsis for uncertain predictions
+                pre = predicted_word
                 time_seq_feature = [] # Reset for next sequence
-
         except Exception as e:
             print(f"Error processing frame: {str(e)}")
             continue
@@ -87,7 +88,7 @@ async def handle_websocket(websocket):
                 while not word_queue.empty():
                     word = word_queue.get()
                     await websocket.send(word)
-
+                # await asyncio.sleep(0.001)
             except Exception as e:
                 print(f"Error handling message: {str(e)}")
                 continue
