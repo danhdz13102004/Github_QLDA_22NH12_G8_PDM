@@ -4,7 +4,7 @@
  */
 
 // Base API URL
-export const API_BASE_URL = 'http://10.0.2.2:3000';
+export const API_BASE_URL = 'http://192.168.1.19:3000';
 
 // User related endpoints
 export const API_ENDPOINTS = {
@@ -14,6 +14,11 @@ export const API_ENDPOINTS = {
   UPDATE_PROFILE: `${API_BASE_URL}/api/users/profile`,
   CHANGE_PASSWORD: `${API_BASE_URL}/api/users/profile/:id/password`,
   COURSES: `${API_BASE_URL}/api/users/courses`,
+  
+  // Forgot password endpoints
+  FORGOT_PASSWORD: `${API_BASE_URL}/api/users/forgot-password`,
+  VERIFY_OTP: `${API_BASE_URL}/api/users/verify-otp`,
+  RESET_PASSWORD: `${API_BASE_URL}/api/users/reset-password`,
   
   // Sign language related endpoints
   SIGNS: `${API_BASE_URL}/api/sign-language/signs`,

@@ -27,8 +27,12 @@ export default function Login() {
   const handleLogin = async () => {
     if (validateForm()) {
       try {
+        console.log('Press Sign In button');
+        console.log('Logging in with:', { email, password });
+        console.log('API Endpoint:', API_ENDPOINTS.LOGIN);
+
         setIsLoading(true);
-          const response = await fetch(`${API_ENDPOINTS.LOGIN}`, {
+        const response = await fetch(`${API_ENDPOINTS.LOGIN}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -83,8 +87,7 @@ export default function Login() {
             />
             {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </View>
-          
-          <View style={styles.inputContainer}>
+            <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
             <TextInput
               style={[styles.input, errors.password && styles.inputError]}
@@ -95,6 +98,13 @@ export default function Login() {
             />
             {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
           </View>
+          
+          <TouchableOpacity 
+            style={styles.forgotPasswordContainer}
+            onPress={() => router.push('/(auths)/forgot-password')}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.button}
@@ -109,7 +119,7 @@ export default function Login() {
           </TouchableOpacity>
           
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account?</Text>
+            <Text style={styles.signupText}>Don&#39;t have an account?</Text>
             <TouchableOpacity onPress={() => router.push('/signup')}>
               <Text style={styles.signupLink}>Sign Up</Text>
             </TouchableOpacity>
@@ -195,9 +205,17 @@ const styles = StyleSheet.create({
   signupText: {
     color: '#666',
     marginRight: 4,
-  },
-  signupLink: {
+  },  signupLink: {
     color: '#5e5ce6',
+    fontWeight: '600',
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+  },
+  forgotPasswordText: {
+    color: '#5e5ce6',
+    fontSize: 14,
     fontWeight: '600',
   },
 });
