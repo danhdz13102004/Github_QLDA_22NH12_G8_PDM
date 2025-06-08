@@ -1,248 +1,332 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Speech from 'expo-speech';
 
-const WS_URL = 'ws://192.168.1.19:8765'; // Adjust to your WebSocket server
+const primaryColor = "#7c1ddb";
 
-export default function Index() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraType, setCameraType] = useState('front');
-  const [isRecognizing, setIsRecognizing] = useState(false);
-  const [recognizedWord, setRecognizedWord] = useState('');
-  const cameraRef = useRef(null);
+const SignLanguageApp = () => {
+  const [currentSentence, setCurrentSentence] = useState('');
+  const [translatedSentences, setTranslatedSentences] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef(null);
-  const frameCapturingRef = useRef(false);
-  const isCapturing = useRef(false)
+  const sentenceBuffer = useRef('');
+  const isAutoSpeakEnabled = useRef(true); // Use ref to avoid re-renders
   useEffect(() => {
-    if (!permission) requestPermission();
+    connectToWebSocket();
 
     return () => {
-      stopCamera();
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
     };
-  }, [permission]);
+  }, []);
 
-  const startCamera = () => {
-    setCameraActive(true);
-  };
 
-  const stopCamera = () => {
-    setCameraActive(false);
-    setIsRecognizing(false);
-    stopFrameStreaming();
 
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-  };
-
-  const toggleCamera = () => {
-    setCameraType((prevType) =>
-      prevType === 'back'
-        ? 'front'
-        : 'back'
-    );
-  };
-
-  const startRecognition = async () => {
-    if (!cameraRef.current) {
-      Alert.alert('Error', 'Camera not ready');
-      return;
-    }
-    try {
-      setIsRecognizing(true);
-      wsRef.current = new WebSocket(WS_URL);
-
-      wsRef.current.onopen = () => {
-        console.log('✅ WebSocket connected');
-        startFrameStreaming();
-      };
-
-      wsRef.current.onmessage = (event) => {
-        setRecognizedWord(event.data);
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        Alert.alert('Connection Error', 'Failed to connect to the recognition server');
-        setIsRecognizing(false);
-        stopFrameStreaming();
-      };
-
-      wsRef.current.onclose = () => {
-        console.log('WebSocket closed');
-        setIsRecognizing(false);
-        stopFrameStreaming();
-      };
-    } catch (error) {
-      console.error('Error starting recognition:', error);
-      Alert.alert('Error', 'Failed to start recognition');
-      setIsRecognizing(false);
-      stopFrameStreaming();
-    }
-  };
-
-  const captureFrame = async () => {
-    if (!cameraRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-    if (isCapturing.current) return;
-    isCapturing.current = true;
-    try {
-      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.1});
-      if (photo?.base64) {
-        wsRef.current.send(photo.base64);
-        console.log('📤 Frame sent');
-      }
-    } catch (error) {
-      console.error('❌ Frame capture/send error:', error);
-    } finally{
-      isCapturing.current = false
-    }
-  };
-
-  const startFrameStreaming = () => {
-    frameCapturingRef.current = true;
-    wsRef.current.intervalId = setInterval(() => {
-      if (frameCapturingRef.current) {
-        captureFrame();
-      }
-    }, 1); // 1 FPS for testing, adjust as needed
-  };
-
-  const stopFrameStreaming = () => {
-    frameCapturingRef.current = false;
-    if (wsRef.current?.intervalId) {
-      clearInterval(wsRef.current.intervalId);
-    }
-  };
-
-  if (!permission?.granted) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>No access to camera</Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Grant Permission</Text>
-        </TouchableOpacity>
-      </View>
-    );
+  const connectToWebSocket = () => {
+  if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+    console.log('WebSocket already connected or connecting');
+    return;
   }
+
+  try {
+    const wsUrl = 'ws://192.168.88.143:8889';
+    wsRef.current = new WebSocket(wsUrl);
+
+    wsRef.current.onopen = () => {
+      setIsConnected(true);
+      console.log('Connected to WebSocket');
+      setCurrentSentence(''); // Reset current sentence on new connection
+    };
+
+    wsRef.current.onmessage = (event) => {
+      const receivedWord = event.data;
+      console.log('Received message:', receivedWord);
+      handleReceivedWord(receivedWord);
+    };
+
+    wsRef.current.onclose = (event) => {
+      setIsConnected(false);
+      if (!event.wasClean) {
+        console.warn('WebSocket closed unexpectedly:', event.code, event.reason);
+      }
+      wsRef.current = null; // Important: reset before reconnect
+      setTimeout(connectToWebSocket, 3000); // Reconnect
+    };
+
+    wsRef.current.onerror = (error) => {
+      setIsConnected(false);
+      console.error('WebSocket error:', error);
+    };
+  } catch (error) {
+    console.error('Connection failed:', error);
+  }
+};
+
+const handleReceivedWord = (word) => {
+  const cleanWord = word.trim();
+  const isEnd = cleanWord.toLowerCase() === 'end.';
+
+  console.log('Received word:', cleanWord);
+  console.log('Current sentence before processing:', sentenceBuffer.current);
+
+  if (isEnd) {
+    const finalSentence = sentenceBuffer.current.trim();
+    console.log('Current sentence before cleanup:', sentenceBuffer.current);
+    console.log('Final sentence:', finalSentence);
+
+    if (finalSentence) {
+      const newSentence = {
+        id: Date.now().toString(),
+        text: finalSentence,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+
+      setTranslatedSentences(prev => {
+        console.log('Previous sentences count:', prev.length);
+        const updated = [newSentence, ...prev];
+        console.log('Updated sentences count:', updated.length);
+        return updated;
+      });
+
+      if (isAutoSpeakEnabled) {
+        console.log('Auto-speak enabled, speaking:', finalSentence);
+        speakText(finalSentence);
+      }
+    }
+
+    sentenceBuffer.current = '';
+    setCurrentSentence('');
+    console.log('Current sentence reset to empty.');
+  } else {
+    // Append the word
+    sentenceBuffer.current = sentenceBuffer.current
+      ? `${sentenceBuffer.current} ${cleanWord}`
+      : cleanWord;
+
+    setCurrentSentence(sentenceBuffer.current); // keep UI in sync
+    console.log('Adding word to current sentence');
+    console.log('New current sentence:', sentenceBuffer.current);
+  }
+};
+
+
+
+
+  const speakText = (text) => {
+    // Cancel any ongoing speech before starting a new one
+    Speech.stop();
+    
+    Speech.speak(text, {
+      language: 'en-US',
+      pitch: 1.0,
+      rate: 0.75,
+      onStart: () => console.log('Started speaking'),
+      onDone: () => console.log('Finished speaking'),
+      onError: (error) => console.error('Speech error:', error),
+    });
+  };
+
+  const toggleAutoSpeak = () => {
+    isAutoSpeakEnabled.valiue = !isAutoSpeakEnabled.value;
+  };
+
+  const renderSentenceItem = ({ item }) => (
+    <View style={styles.sentenceItem}>
+      <View style={styles.sentenceContent}>
+        <Text style={styles.sentenceText}>{item.text}</Text>
+        <Text style={styles.timestampText}>{item.timestamp}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.hearButton}
+        onPress={() => speakText(item.text)}
+      >
+        <Ionicons name="volume-high" size={24} color={primaryColor} />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      {cameraActive ? (
-        <View style={styles.cameraContainer}>
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing={cameraType}
-            pictureSize='640x480'
-            animateShutter={false}
-          >
-            <View style={styles.recognitionOverlay}>
-              {recognizedWord && (
-                <View style={styles.resultContainer}>
-                  <Text style={styles.resultText}>{recognizedWord}</Text>
-                </View>
-              )}
-
-              {isRecognizing && (
-                <View style={styles.recognitionStatus}>
-                </View>
-              )}
-
-              <View style={styles.controlsContainer}>
-                <TouchableOpacity style={styles.iconButton} onPress={toggleCamera}>
-                  <Ionicons name="camera-reverse-outline" size={28} color="white" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.recognizeButton, isRecognizing && styles.recognizeButtonActive]}
-                  onPress={isRecognizing ? stopCamera : startRecognition}
-                >
-                  <Text style={styles.recognizeButtonText}>
-                    {isRecognizing ? 'Stop' : 'Recognize'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.iconButton} onPress={stopCamera}>
-                  <Ionicons name="close-circle-outline" size={28} color="white" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </CameraView>
+      <StatusBar barStyle="light-content" backgroundColor={primaryColor} />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Sign Language Recognition</Text>
+        <View style={styles.connectionStatus}>
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: isConnected ? '#4CAF50' : '#F44336' },
+            ]}
+          />
+          <Text style={styles.statusText}>
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </Text>
         </View>
-      ) : (
-        <View style={styles.startContainer}>
-          <View style={styles.introContent}>
-            <Ionicons name="hand-left" size={80} color="#6c5ce7" />
-            <Text style={styles.title}>Sign Language Recognition</Text>
-            <Text style={styles.description}>
-              Point your camera at sign language gestures and get real-time translation to text
-            </Text>
-          </View>
+      </View>
 
-          <TouchableOpacity style={styles.startButton} onPress={startCamera}>
-            <Text style={styles.startButtonText}>Start Camera</Text>
+      <View style={styles.topHalf}>
+        <View style={styles.currentTranslationHeader}>
+          <Text style={styles.sectionTitle}>Current Translation</Text>
+          <TouchableOpacity
+            style={[
+              styles.autoSpeakButton,
+              isAutoSpeakEnabled && styles.autoSpeakButtonActive,
+            ]}
+            onPress={toggleAutoSpeak}
+          >
+            <Ionicons
+              name={isAutoSpeakEnabled ? 'volume-high' : 'volume-mute'}
+              size={20}
+              color={isAutoSpeakEnabled ? '#fff' : primaryColor}
+            />
+            <Text
+              style={[
+                styles.autoSpeakText,
+                isAutoSpeakEnabled && styles.autoSpeakTextActive,
+              ]}
+            >
+              Auto-speak
+            </Text>
           </TouchableOpacity>
         </View>
-      )}
+
+        <View style={styles.currentSentenceContainer}>
+          <Text style={styles.currentSentenceText}>
+            {currentSentence || ''}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.bottomHalf}>
+        <Text style={styles.sectionTitle}>Previous Translations</Text>
+        {translatedSentences.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="chatbubbles-outline" size={48} color="#ccc" />
+            <Text style={styles.emptyStateText}>No translations yet</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={translatedSentences}
+            renderItem={renderSentenceItem}
+            keyExtractor={(item) => item.id}
+            style={styles.sentencesList}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { fontSize: 18, color: '#e74c3c', marginBottom: 20, textAlign: 'center' },
-  permissionButton: { backgroundColor: '#6c5ce7', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  permissionButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  cameraContainer: { flex: 1 },
-  camera: { flex: 1 },
-  recognitionOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
-  recognitionStatus: {
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: {
+    backgroundColor: primaryColor,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-    borderRadius: 20,
-    padding:30,
+  },
+  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  connectionStatus: { flexDirection: 'row', alignItems: 'center' },
+  statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  statusText: { color: '#fff', fontSize: 12 },
+  topHalf: {
+    flex: 1,
+    backgroundColor: '#fff',
+    margin: 10,
+    borderRadius: 12,
+    padding: 20,
+    elevation: 3,
+  },
+  currentTranslationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
-  recognitionStatusText: { color: 'white', fontSize: 16 },
-  controlsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  iconButton: {
-    width: 50, height: 50, borderRadius: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  recognizeButton: {
-    backgroundColor: '#6c5ce7',
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  recognizeButtonActive: { backgroundColor: '#e74c3c' },
-  recognizeButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  resultContainer: {
-    position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 15,
-    borderRadius: 10,
-  },
-  resultText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
-  startContainer: { flex: 1, justifyContent: 'space-between', padding: 30 },
-  introContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginTop: 20, marginBottom: 10, textAlign: 'center' },
-  description: { fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 24 },
-  startButton: {
-    backgroundColor: '#6c5ce7',
-    paddingVertical: 15,
-    borderRadius: 10,
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: primaryColor },
+  autoSpeakButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: primaryColor,
   },
-  startButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  autoSpeakButtonActive: {
+    backgroundColor: primaryColor,
+  },
+  autoSpeakText: {
+    marginLeft: 8,
+    color: primaryColor,
+    fontWeight: 'bold',
+  },
+  autoSpeakTextActive: {
+    color: '#fff',
+  },
+  currentSentenceContainer: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: primaryColor,
+  },
+  currentSentenceText: {
+    fontSize: 44,
+    color: '#000',
+    fontWeight: 'bold',
+  },
+  bottomHalf: {
+    flex: 1,
+    marginHorizontal: 10,
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    elevation: 3,
+  },
+  sentenceItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f5f0ff',
+    padding: 16,
+    borderRadius: 8,
+    marginVertical: 8,
+    elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: primaryColor,
+  },
+  sentenceContent: { flex: 1, marginRight: 12 },
+  sentenceText: { fontSize: 18, color: '#000', fontWeight: 'bold' },
+  timestampText: { fontSize: 12, color: '#999', marginTop: 4 },
+  hearButton: { 
+    padding: 10,
+    backgroundColor: '#f0f0ff',
+    borderRadius: 20,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 40,
+  },
+  emptyStateText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#999',
+  },
 });
+
+export default SignLanguageApp;
