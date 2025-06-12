@@ -107,7 +107,7 @@ const SignLanguageApp = () => {
 
   const handleReceivedWord = useCallback((word) => {
     const cleanWord = word.trim();
-    const isEnd = cleanWord.toLowerCase() === 'end.';
+    const isEnd = cleanWord.toLowerCase().includes('.');
 
     console.log('Received word:', cleanWord);
     console.log('Current sentence before processing:', sentenceBuffer.current);
@@ -144,7 +144,7 @@ const SignLanguageApp = () => {
     } else {
       // Append the word
       sentenceBuffer.current = sentenceBuffer.current
-        ? `${sentenceBuffer.current} ${cleanWord}`
+        ? `${sentenceBuffer.current}${cleanWord}`
         : cleanWord;
       setCurrentSentence(sentenceBuffer.current);
     }
@@ -196,7 +196,7 @@ const SignLanguageApp = () => {
       socketRef.current.on('error', (error) => {
         setIsConnected(false);
         console.error('❌ TCP Socket error:', error);
-        socketRef.current = null;
+        socketRef.current = null; 
       });
     } catch (error) {
       console.error('❌ TCP Connection failed:', error);
