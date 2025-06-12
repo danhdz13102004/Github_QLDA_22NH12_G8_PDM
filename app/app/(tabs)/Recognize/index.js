@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
@@ -19,121 +20,252 @@ const SignLanguageApp = () => {
   const [translatedSentences, setTranslatedSentences] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isAutoSpeakEnabled, setIsAutoSpeakEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const socketRef = useRef(null);
   const sentenceBuffer = useRef('');
+  
+  // 🔧 Thêm ref để track auto-speak setting
+  const isAutoSpeakEnabledRef = useRef(true);
 
+  // Update ref whenever state changes
   useEffect(() => {
-    connectToTcpSocket();
+    isAutoSpeakEnabledRef.current = isAutoSpeakEnabled;
+    console.log('Auto-speak ref updated to:', isAutoSpeakEnabled);
+  }, [isAutoSpeakEnabled]);
 
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.destroy();
-      }
-    };
-  }, [connectToTcpSocket]);
-  const connectToTcpSocket = useCallback(() => {
-    if (socketRef.current && !socketRef.current.destroyed) {
-      console.log('TCP Socket already connected');
+  // Improved speech function with better error handling
+  const speakText = useCallback((text) => {
+    if (!text || text.trim() === '') {
+      console.log('No text to speak');
       return;
     }
+
+    // 🔧 Sử dụng ref thay vì state để check real-time value
+    if (!isAutoSpeakEnabledRef.current) {
+      console.log('Auto-speak is disabled (checked via ref), not speaking');
+      return;
+    }
+
+    try {
+      // Cancel any ongoing speech before starting a new one
+      Speech.stop();
+      setIsSpeaking(false);
+
+      console.log('Speaking text:', text);
+      setIsSpeaking(true);
+
+      Speech.speak(text, {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.75,
+        onStart: () => {
+          console.log('Started speaking');
+          setIsSpeaking(true);
+        },
+        onDone: () => {
+          console.log('Finished speaking');
+          setIsSpeaking(false);
+        },
+        onError: (error) => {
+          console.error('Speech error:', error);
+          setIsSpeaking(false);
+        },
+        onStopped: () => {
+          console.log('Speech stopped');
+          setIsSpeaking(false);
+        },
+      });
+    } catch (error) {
+      console.error('Error in speakText:', error);
+      setIsSpeaking(false);
+    }
+  }, []); // 🔧 Bỏ dependency vì sử dụng ref
+
+  // Improved toggle function with immediate speech stop
+  const toggleAutoSpeak = useCallback(() => {
+    setIsAutoSpeakEnabled(prev => {
+      const newValue = !prev;
+      console.log('Toggling auto-speak from', prev, 'to', newValue);
+      
+      // 🔧 Update ref immediately
+      isAutoSpeakEnabledRef.current = newValue;
+      
+      // Nếu đang tắt auto-speak, dừng ngay lập tức
+      if (!newValue) {
+        try {
+          Speech.stop();
+          setIsSpeaking(false);
+          console.log('Auto-speak disabled, stopped current speech');
+        } catch (error) {
+          console.error('Error stopping speech:', error);
+        }
+      }
+      
+      return newValue;
+    });
+  }, []);
+
+  const handleReceivedWord = useCallback((word) => {
+    const cleanWord = word.trim();
+    const isEnd = cleanWord.toLowerCase() === 'end.';
+
+    console.log('Received word:', cleanWord);
+    console.log('Current sentence before processing:', sentenceBuffer.current);
+
+    if (isEnd) {
+      const finalSentence = sentenceBuffer.current.trim();
+      console.log('Final sentence:', finalSentence);
+
+      if (finalSentence) {
+        const newSentence = {
+          id: Date.now().toString(),
+          text: finalSentence,
+          timestamp: new Date().toLocaleTimeString(),
+        };
+
+        setTranslatedSentences(prev => {
+          const updated = [newSentence, ...prev];
+          return updated;
+        });
+
+        // 🔧 Check auto-speak setting trước khi gọi speakText
+        console.log('Checking auto-speak before speaking. Current value:', isAutoSpeakEnabledRef.current);
+        
+        if (isAutoSpeakEnabledRef.current) {
+          console.log('Auto-speak enabled, speaking:', finalSentence);
+          speakText(finalSentence);
+        } else {
+          console.log('Auto-speak disabled, NOT speaking');
+        }
+      }
+
+      sentenceBuffer.current = '';
+      setCurrentSentence('');
+    } else {
+      // Append the word
+      sentenceBuffer.current = sentenceBuffer.current
+        ? `${sentenceBuffer.current} ${cleanWord}`
+        : cleanWord;
+      setCurrentSentence(sentenceBuffer.current);
+    }
+  }, [speakText]); // 🔧 Thêm speakText dependency
+
+  const connectToTcpSocket = useCallback(() => {
+    // Kiểm tra xem đã có kết nối hay chưa
+    if (socketRef.current && !socketRef.current.destroyed) {
+      console.log('TCP Socket already connected - reusing connection');
+      return;
+    }
+
+    console.log('Creating new TCP connection...');
 
     try {
       const options = {
         port: 8889,
         host: '172.20.10.3',
-        localAddress: '0.0.0.0', // Bind to any local IP
+        localAddress: '0.0.0.0',
         reuseAddress: true,
       };
 
       socketRef.current = TcpSocket.createConnection(options, () => {
         setIsConnected(true);
-        console.log('Connected to TCP Socket');
-        setCurrentSentence(''); // Reset current sentence on new connection
+        console.log('✅ Connected to TCP Socket');
+        setCurrentSentence('');
       });
 
       socketRef.current.on('data', (data) => {
         const receivedWord = data.toString('utf8');
-        console.log('Received message:', receivedWord);
+        console.log('📤 Received message:', receivedWord);
         handleReceivedWord(receivedWord);
       });
 
       socketRef.current.on('close', (hadError) => {
         setIsConnected(false);
-        console.log('TCP Socket closed', hadError ? 'with error' : 'normally');
-        socketRef.current = null; // Important: reset before reconnect
-        setTimeout(connectToTcpSocket, 3000); // Reconnect after 3 seconds
+        console.log('🔌 TCP Socket closed', hadError ? 'with error' : 'normally');
+        socketRef.current = null;
+        
+        // Auto-reconnect sau 3 giây
+        setTimeout(() => {
+          if (!socketRef.current) {
+            console.log('🔄 Attempting to reconnect...');
+            connectToTcpSocket();
+          }
+        }, 3000);
       });
 
       socketRef.current.on('error', (error) => {
         setIsConnected(false);
-        console.error('TCP Socket error:', error);
-      });    } catch (error) {
-      console.error('TCP Connection failed:', error);
-    }
-  }, [handleReceivedWord]);
-
-const handleReceivedWord = useCallback((word) => {
-  const cleanWord = word.trim();
-  const isEnd = cleanWord.toLowerCase() === 'end.';
-
-  console.log('Received word:', cleanWord);
-  console.log('Current sentence before processing:', sentenceBuffer.current);
-
-  if (isEnd) {
-    const finalSentence = sentenceBuffer.current.trim();
-    console.log('Current sentence before cleanup:', sentenceBuffer.current);
-    console.log('Final sentence:', finalSentence);
-
-    if (finalSentence) {
-      const newSentence = {
-        id: Date.now().toString(),
-        text: finalSentence,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-      setTranslatedSentences(prev => {
-        console.log('Previous sentences count:', prev.length);
-        const updated = [newSentence, ...prev];
-        console.log('Updated sentences count:', updated.length);
-        return updated;
+        console.error('❌ TCP Socket error:', error);
+        socketRef.current = null;
       });
-
-      if (isAutoSpeakEnabled) {
-        console.log('Auto-speak enabled, speaking:', finalSentence);
-        speakText(finalSentence);
-      }
+    } catch (error) {
+      console.error('❌ TCP Connection failed:', error);
+      setIsConnected(false);
     }
+  }, [handleReceivedWord]); // 🔧 Thêm handleReceivedWord dependency
 
-    sentenceBuffer.current = '';
-    setCurrentSentence('');
-    console.log('Current sentence reset to empty.');
-  } else {
-    // Append the word
-    sentenceBuffer.current = sentenceBuffer.current
-      ? `${sentenceBuffer.current} ${cleanWord}`
-      : cleanWord;    setCurrentSentence(sentenceBuffer.current); // keep UI in sync    console.log('Adding word to current sentence');
-    console.log('New current sentence:', sentenceBuffer.current);
-  }
-}, [speakText, isAutoSpeakEnabled]);
+  useEffect(() => {
+    // Chỉ kết nối một lần khi component mount
+    connectToTcpSocket();
 
+    return () => {
+      console.log('🧹 Cleaning up TCP connection...');
+      
+      // Cleanup speech
+      try {
+        Speech.stop();
+        setIsSpeaking(false);
+      } catch (error) {
+        console.error('Error stopping speech on cleanup:', error);
+      }
+      
+      // Cleanup socket
+      if (socketRef.current && !socketRef.current.destroyed) {
+        try {
+          socketRef.current.destroy();
+          socketRef.current = null;
+        } catch (error) {
+          console.error('Error destroying socket:', error);
+        }
+      }
+    };
+  }, [connectToTcpSocket]); // 🔧 Thêm connectToTcpSocket dependency
 
+  // Manual speak function for sentence items
+  const handleManualSpeak = useCallback((text) => {
+    try {
+      Speech.stop();
+      setIsSpeaking(false);
 
+      console.log('Manual speaking:', text);
+      setIsSpeaking(true);
 
-  const speakText = (text) => {
-    // Cancel any ongoing speech before starting a new one
-    Speech.stop();
-    
-    Speech.speak(text, {
-      language: 'en-US',
-      pitch: 1.0,
-      rate: 0.75,
-      onStart: () => console.log('Started speaking'),
-      onDone: () => console.log('Finished speaking'),
-      onError: (error) => console.error('Speech error:', error),
-    });
-  };  const toggleAutoSpeak = () => {
-    setIsAutoSpeakEnabled(prev => !prev);
-  };
+      Speech.speak(text, {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.75,
+        onStart: () => {
+          console.log('Manual speech started');
+          setIsSpeaking(true);
+        },
+        onDone: () => {
+          console.log('Manual speech finished');
+          setIsSpeaking(false);
+        },
+        onError: (error) => {
+          console.error('Manual speech error:', error);
+          setIsSpeaking(false);
+        },
+        onStopped: () => {
+          console.log('Manual speech stopped');
+          setIsSpeaking(false);
+        },
+      });
+    } catch (error) {
+      console.error('Error in manual speak:', error);
+      setIsSpeaking(false);
+    }
+  }, []);
 
   const renderSentenceItem = ({ item }) => (
     <View style={styles.sentenceItem}>
@@ -143,7 +275,7 @@ const handleReceivedWord = useCallback((word) => {
       </View>
       <TouchableOpacity
         style={styles.hearButton}
-        onPress={() => speakText(item.text)}
+        onPress={() => handleManualSpeak(item.text)}
       >
         <Ionicons name="volume-high" size={24} color={primaryColor} />
       </TouchableOpacity>
@@ -153,6 +285,7 @@ const handleReceivedWord = useCallback((word) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={primaryColor} />
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Sign Language Recognition</Text>
         <View style={styles.connectionStatus}>
@@ -189,7 +322,13 @@ const handleReceivedWord = useCallback((word) => {
                 isAutoSpeakEnabled && styles.autoSpeakTextActive,
               ]}
             >
-              Auto-speak
+              {/* 🔧 Logic hiển thị text dựa vào trạng thái */}
+              {!isAutoSpeakEnabled 
+                ? 'Auto-speak' 
+                : isSpeaking 
+                  ? 'Speaking...' 
+                  : 'Auto-speak'
+              }
             </Text>
           </TouchableOpacity>
         </View>
@@ -259,6 +398,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: primaryColor,
+    minWidth: 110, // 🔧 Thêm minWidth để tránh vỡ giao diện
   },
   autoSpeakButtonActive: {
     backgroundColor: primaryColor,
@@ -267,6 +407,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: primaryColor,
     fontWeight: 'bold',
+    fontSize: 12, // 🔧 Giảm font size một chút để vừa khung
   },
   autoSpeakTextActive: {
     color: '#fff',
