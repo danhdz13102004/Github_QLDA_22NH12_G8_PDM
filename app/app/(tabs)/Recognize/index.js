@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import TcpSocket from 'react-native-tcp-socket';
 
 const primaryColor = "#7c1ddb";
 
@@ -17,62 +18,61 @@ const SignLanguageApp = () => {
   const [currentSentence, setCurrentSentence] = useState('');
   const [translatedSentences, setTranslatedSentences] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
-  const wsRef = useRef(null);
+  const [isAutoSpeakEnabled, setIsAutoSpeakEnabled] = useState(true);
+  const socketRef = useRef(null);
   const sentenceBuffer = useRef('');
-  const isAutoSpeakEnabled = useRef(true); // Use ref to avoid re-renders
+
   useEffect(() => {
-    connectToWebSocket();
+    connectToTcpSocket();
 
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
+      if (socketRef.current) {
+        socketRef.current.destroy();
       }
     };
-  }, []);
+  }, [connectToTcpSocket]);
+  const connectToTcpSocket = useCallback(() => {
+    if (socketRef.current && !socketRef.current.destroyed) {
+      console.log('TCP Socket already connected');
+      return;
+    }
 
+    try {
+      const options = {
+        port: 8889,
+        host: '172.20.10.3',
+        localAddress: '0.0.0.0', // Bind to any local IP
+        reuseAddress: true,
+      };
 
+      socketRef.current = TcpSocket.createConnection(options, () => {
+        setIsConnected(true);
+        console.log('Connected to TCP Socket');
+        setCurrentSentence(''); // Reset current sentence on new connection
+      });
 
-  const connectToWebSocket = () => {
-  if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
-    console.log('WebSocket already connected or connecting');
-    return;
-  }
+      socketRef.current.on('data', (data) => {
+        const receivedWord = data.toString('utf8');
+        console.log('Received message:', receivedWord);
+        handleReceivedWord(receivedWord);
+      });
 
-  try {
-    const wsUrl = 'ws://192.168.88.143:8889';
-    wsRef.current = new WebSocket(wsUrl);
+      socketRef.current.on('close', (hadError) => {
+        setIsConnected(false);
+        console.log('TCP Socket closed', hadError ? 'with error' : 'normally');
+        socketRef.current = null; // Important: reset before reconnect
+        setTimeout(connectToTcpSocket, 3000); // Reconnect after 3 seconds
+      });
 
-    wsRef.current.onopen = () => {
-      setIsConnected(true);
-      console.log('Connected to WebSocket');
-      setCurrentSentence(''); // Reset current sentence on new connection
-    };
+      socketRef.current.on('error', (error) => {
+        setIsConnected(false);
+        console.error('TCP Socket error:', error);
+      });    } catch (error) {
+      console.error('TCP Connection failed:', error);
+    }
+  }, [handleReceivedWord]);
 
-    wsRef.current.onmessage = (event) => {
-      const receivedWord = event.data;
-      console.log('Received message:', receivedWord);
-      handleReceivedWord(receivedWord);
-    };
-
-    wsRef.current.onclose = (event) => {
-      setIsConnected(false);
-      if (!event.wasClean) {
-        console.warn('WebSocket closed unexpectedly:', event.code, event.reason);
-      }
-      wsRef.current = null; // Important: reset before reconnect
-      setTimeout(connectToWebSocket, 3000); // Reconnect
-    };
-
-    wsRef.current.onerror = (error) => {
-      setIsConnected(false);
-      console.error('WebSocket error:', error);
-    };
-  } catch (error) {
-    console.error('Connection failed:', error);
-  }
-};
-
-const handleReceivedWord = (word) => {
+const handleReceivedWord = useCallback((word) => {
   const cleanWord = word.trim();
   const isEnd = cleanWord.toLowerCase() === 'end.';
 
@@ -111,13 +111,10 @@ const handleReceivedWord = (word) => {
     // Append the word
     sentenceBuffer.current = sentenceBuffer.current
       ? `${sentenceBuffer.current} ${cleanWord}`
-      : cleanWord;
-
-    setCurrentSentence(sentenceBuffer.current); // keep UI in sync
-    console.log('Adding word to current sentence');
+      : cleanWord;    setCurrentSentence(sentenceBuffer.current); // keep UI in sync    console.log('Adding word to current sentence');
     console.log('New current sentence:', sentenceBuffer.current);
   }
-};
+}, [speakText, isAutoSpeakEnabled]);
 
 
 
@@ -134,17 +131,15 @@ const handleReceivedWord = (word) => {
       onDone: () => console.log('Finished speaking'),
       onError: (error) => console.error('Speech error:', error),
     });
-  };
-
-  const toggleAutoSpeak = () => {
-    isAutoSpeakEnabled.valiue = !isAutoSpeakEnabled.value;
+  };  const toggleAutoSpeak = () => {
+    setIsAutoSpeakEnabled(prev => !prev);
   };
 
   const renderSentenceItem = ({ item }) => (
     <View style={styles.sentenceItem}>
       <View style={styles.sentenceContent}>
-        <Text style={styles.sentenceText}>{item.text}</Text>
-        <Text style={styles.timestampText}>{item.timestamp}</Text>
+        <Text style={styles.sentenceText}>{item.text || 'Text'}</Text>
+        <Text style={styles.timestampText}>{item.timestamp || 'Timestamp'}</Text>
       </View>
       <TouchableOpacity
         style={styles.hearButton}
