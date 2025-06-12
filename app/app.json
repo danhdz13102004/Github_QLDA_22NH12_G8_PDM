@@ -7,14 +7,13 @@
     "icon": "./assets/images/icon.png",
     "scheme": "app",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "permissions": [
         "CAMERA",
-        "RECORD_AUDIO",
         "WRITE_EXTERNAL_STORAGE",
         "READ_EXTERNAL_STORAGE"
       ],
@@ -22,7 +21,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.cupidarrow.app"
     },
     "web": {
       "bundler": "metro",

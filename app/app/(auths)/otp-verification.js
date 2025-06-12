@@ -23,7 +23,7 @@ const OTPVerificationScreen = () => {
   const { showToast } = useToast();
   const { email } = useLocalSearchParams();
   const displayEmail = typeof email === 'string' && email.trim() ? email : 'your email';
-console.log('Email received in OTPVerificationScreen:', email);
+  console.log('Email received in OTPVerificationScreen:', email);
   
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);  

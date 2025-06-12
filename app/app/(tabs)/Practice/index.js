@@ -244,9 +244,15 @@ export default function PracticeScreen() {
         };
       });
 
-      // Check if user is authenticated
+      // Check if user is authenticated and token is valid
       if (token) {
         try {
+          // Validate token before making request
+          const tokenValidation = await AsyncStorage.getItem('userToken');
+          if (!tokenValidation || tokenValidation !== token) {
+            throw new Error('Token validation failed');
+          }
+
           // Submit to server for authenticated users
           const response = await fetch(API_ENDPOINTS.QUIZ_SUBMIT, {
             method: 'POST',
@@ -263,13 +269,20 @@ export default function PracticeScreen() {
           const data = await response.json();
 
           if (!response.ok) {
+            // If token is invalid, clear it and fallback to local calculation
+            if (response.status === 401 || response.status === 403) {
+              console.log('Token expired or invalid, clearing token and using local calculation');
+              await AsyncStorage.removeItem('userToken');
+              setToken(null);
+              throw new Error('Authentication failed - using local calculation');
+            }
             throw new Error(data.message || 'Failed to submit quiz answers');
           }
 
           setResults(data.data);
         } catch (submitError) {
           console.error('Error submitting to server:', submitError);
-          // Fall back to local calculation on error
+          // Fall back to local calculation on any error
           calculateLocalResults();
         }
       } else {
@@ -281,6 +294,11 @@ export default function PracticeScreen() {
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to process quiz answers');
       console.error('Error processing quiz:', error);
+      // Ensure we still show results even if there's an error
+      if (!results) {
+        calculateLocalResults();
+        setQuizCompleted(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -346,14 +364,16 @@ export default function PracticeScreen() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.resultsContainer}>
             <View style={styles.scoreContainer}>
-              <Text style={styles.scoreTitle}>Quiz Results</Text>              <View style={styles.scoreCircle}>
+              <Text style={styles.scoreTitle}>Quiz Results</Text>
+              <View style={styles.scoreCircle}>
                 <Text style={styles.scorePercentage}>
                   {results.score && results.score.percentage !== undefined ? `${results.score.percentage}%` : '0%'}
                 </Text>
                 <Text style={styles.scoreText}>
                   {results.score ? `${results.score.correct}/${results.score.total}` : '0/0'}
                 </Text>
-              </View>              <Text style={styles.scoreMessage}>
+              </View>
+              <Text style={styles.scoreMessage}>
                 {results.score && results.score.percentage >= 80 ? 'Great job!' :
                   results.score && results.score.percentage >= 60 ? 'Good effort!' : 'Keep practicing!'}
               </Text>
@@ -398,16 +418,16 @@ export default function PracticeScreen() {
                 );
               })}
             </View>
+            
             <TouchableOpacity
               style={styles.newQuizButton}
               onPress={startNewQuiz}
             >
               <Text style={styles.newQuizButtonText}>Take Another Quiz</Text>
             </TouchableOpacity>
-
-
           </View>
-        </ScrollView>      </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
@@ -454,7 +474,8 @@ export default function PracticeScreen() {
               return (
                 <View key={question.questionId} style={styles.reviewItem}>
                   <View style={styles.reviewItemHeader}>
-                    <Text style={styles.reviewItemNumber}>Question {index + 1}</Text>                    <View style={[
+                    <Text style={styles.reviewItemNumber}>Question {index + 1}</Text>
+                    <View style={[
                       styles.reviewItemStatus,
                       isAnswered ? styles.reviewItemAnswered : styles.reviewItemUnanswered
                     ]}>
@@ -464,7 +485,8 @@ export default function PracticeScreen() {
                     </View>
                   </View>
 
-                  <View style={styles.reviewItemContent}>                    <Text style={styles.reviewItemQuestion}>What sign is shown in the video?</Text>
+                  <View style={styles.reviewItemContent}>
+                    <Text style={styles.reviewItemQuestion}>What sign is shown in the video?</Text>
                     <Text style={styles.reviewItemAnswer}>
                       Your answer: <Text style={isAnswered ? styles.reviewItemAnswerText : styles.reviewItemNotAnsweredText}>
                         {selectedOption}
@@ -487,13 +509,14 @@ export default function PracticeScreen() {
               );
             })}
 
-            <View style={styles.reviewButtonsContainer}>                <TouchableOpacity
-              style={styles.reviewBackButton}
-              onPress={backToQuiz}
-            >
-              <Ionicons name="arrow-back" size={24} color="#fff" />
-              <Text style={styles.reviewButtonText}>Back to Quiz</Text>
-            </TouchableOpacity>
+            <View style={styles.reviewButtonsContainer}>
+              <TouchableOpacity
+                style={styles.reviewBackButton}
+                onPress={backToQuiz}
+              >
+                <Ionicons name="arrow-back" size={24} color="#fff" />
+                <Text style={styles.reviewButtonText}>Back to Quiz</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
@@ -507,6 +530,7 @@ export default function PracticeScreen() {
                 <Ionicons name="checkmark-circle" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
+            
             {!allQuestionsAnswered && (
               <Text style={styles.reviewWarning}>
                 Please answer all questions before submitting the quiz.
@@ -575,10 +599,12 @@ export default function PracticeScreen() {
                   <Text style={styles.retryVideoButtonText}>Retry</Text>
                 </TouchableOpacity>
               </View>
-            )}              {currentQuestion.video && (
+            )}
+            
+            {currentQuestion.video && (
               <Video
                 ref={videoRef}
-                key={`video-${currentQuestionIndex}`} // Add key to force re-creation when question changes
+                key={`video-${currentQuestionIndex}`}
                 source={getVideoSource(currentQuestion)}
                 rate={1.0}
                 volume={1.0}
